@@ -1,0 +1,59 @@
+# ============================================================
+# Dynamic Pricing & Demand Forecasting Engine — Requirements
+# ============================================================
+
+# ---------- Core data & scientific stack ----------
+numpy>=1.24,<2.0
+pandas>=2.0
+scipy>=1.11
+
+# ---------- Visualization ----------
+matplotlib>=3.7
+seaborn>=0.13
+plotly>=5.18
+
+# ---------- Classical ML ----------
+scikit-learn>=1.3
+xgboost>=2.0
+lightgbm>=4.1
+
+# ---------- Deep-learning forecasting ----------
+neuralforecast>=1.7          # NHITS, TimesNet, PatchTST, etc.
+pytorch-lightning>=2.1
+torch>=2.1
+
+# ---------- Statistical forecasting ----------
+statsforecast>=1.7           # AutoARIMA, ETS baselines
+prophet>=1.1                 # Facebook Prophet
+
+# ---------- Uncertainty quantification ----------
+mapie>=0.8                   # Conformal prediction wrappers
+
+# ---------- Explainability ----------
+shap>=0.44
+
+# ---------- Optimization ----------
+optuna>=3.5                  # Hyperparameter tuning
+# scipy already covers constrained optimization (minimize, linprog)
+
+# ---------- API ----------
+fastapi>=0.109
+uvicorn[standard]>=0.27
+pydantic>=2.5
+
+# ---------- Dashboard ----------
+streamlit>=1.31
+
+# ---------- Data & experiment utilities ----------
+joblib>=1.3
+tqdm>=4.66
+python-dotenv>=1.0
+
+# ---------- Testing ----------
+pytest>=8.0
+httpx>=0.27                  # async test client for FastAPI
+
+# ---------- Notebook / dev ----------
+ipykernel>=6.29
+ipywidgets>=8.1
+nbformat>=5.9
