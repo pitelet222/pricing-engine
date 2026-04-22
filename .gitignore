@@ -1,0 +1,23 @@
+# Virtual environment
+.venv/
+
+# Editor settings
+.vscode/
+
+# Notebook training artifacts
+notebooks/lightning_logs/
+notebooks/nf_model/
+
+# Generated data outputs (large files, reproducible from notebooks)
+data/outputs/
+data/processed/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# OS
+.DS_Store
+Thumbs.db
