@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\yagoc\\\\OneDrive\\\\Escritorio\\\\pite\\\\pite_py_projects\\\\pricing-engine\" -Recurse)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(python -c ' *)",
+      "Bash(xargs wc -l)",
+      "Bash(python3)",
+      "Bash(python)"
+    ]
+  }
+}
