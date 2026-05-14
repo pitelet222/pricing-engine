@@ -13,6 +13,8 @@ import pytest
 from pydantic import ValidationError
 
 from src.api.schemas import (
+    BatchRecommendRequest,
+    BatchRecommendResponse,
     ExplainResponse,
     ForecastPoint,
     ForecastResponse,
@@ -226,3 +228,49 @@ class TestSimulateResponse:
             current_volume=180_000.0,
         )
         assert resp.predicted_volume == pytest.approx(219_895.0)
+
+
+# ---------------------------------------------------------------------------
+# BatchRecommendRequest / BatchRecommendResponse
+# ---------------------------------------------------------------------------
+
+class TestBatchRecommendRequest:
+    def test_valid(self):
+        req = BatchRecommendRequest(unique_ids=["Albany_conventional", "LosAngeles_organic"])
+        assert len(req.unique_ids) == 2
+
+    def test_empty_list_rejected(self):
+        with pytest.raises(ValidationError):
+            BatchRecommendRequest(unique_ids=[])
+
+
+_REC = RecommendationResponse(
+    unique_id="Albany_conventional",
+    is_organic=False,
+    current_price=1.20,
+    optimal_price=1.35,
+    price_change_pct=12.5,
+    current_revenue=50_000.0,
+    optimal_revenue=58_000.0,
+    revenue_change_pct=16.0,
+    elasticity=-1.8,
+)
+
+
+class TestBatchRecommendResponse:
+    def test_valid(self):
+        resp = BatchRecommendResponse(
+            requested=2,
+            found=1,
+            not_found=["UNKNOWN"],
+            results=[_REC],
+        )
+        assert resp.requested == 2
+        assert resp.found == 1
+        assert resp.not_found == ["UNKNOWN"]
+        assert len(resp.results) == 1
+
+    def test_empty_results(self):
+        resp = BatchRecommendResponse(requested=1, found=0, not_found=["X"], results=[])
+        assert resp.found == 0
+        assert resp.results == []

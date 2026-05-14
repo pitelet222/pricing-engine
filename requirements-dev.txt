@@ -4,6 +4,10 @@
 # ---------- Testing ----------
 pytest>=8.0
 httpx>=0.27          # TestClient transport for FastAPI integration tests
+pytest-cov>=5.0      # Coverage measurement and reporting
 
 # ---------- Linting ----------
 ruff>=0.4            # Fast Python linter (replaces flake8, isort, pyupgrade)
+
+# ---------- Git hooks ----------
+pre-commit>=3.7      # Run ruff automatically on every git commit

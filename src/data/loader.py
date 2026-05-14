@@ -12,6 +12,7 @@ recent available date, ready to have AveragePrice swapped out per request.
 
 from __future__ import annotations
 
+import logging
 import pathlib
 import pickle
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ import joblib
 import pandas as pd
 
 from src.config import settings
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Filesystem roots — resolved from Settings so Docker/env can override them.
@@ -149,6 +152,88 @@ def _build_series_meta(recommendations_df: pd.DataFrame) -> dict[str, dict]:
 
 
 # ---------------------------------------------------------------------------
+# Startup data integrity validation
+# ---------------------------------------------------------------------------
+
+def _validate(ds: DataStore) -> None:
+    """
+    Run lightweight sanity checks on the loaded DataStore.
+
+    All checks are non-fatal: findings are logged as WARNING so the server
+    starts even if data is partially degraded. A single INFO line is logged
+    when all checks pass.
+
+    Checks
+    ------
+    1. All 86 series have exactly 12 forecast weeks.
+    2. No non-positive optimal prices in recommendations.
+    3. Conformal PI lower_q < upper_q for every series.
+    4. SHAP driver ranks 1, 2, 3 present for every series.
+    5. LightGBM model smoke test: predict one row, verify positive output.
+    """
+    issues = 0
+
+    # 1. Forecast completeness
+    counts = ds.forecast_df.groupby("unique_id").size()
+    bad = counts[counts != 12]
+    if not bad.empty:
+        _log.warning(
+            "validation: %d series have != 12 forecast weeks: %s",
+            len(bad), list(bad.index[:5]),
+        )
+        issues += len(bad)
+
+    # 2. Price sanity
+    bad_price = ds.recommendations_df[ds.recommendations_df["optimal_price"] <= 0]
+    if not bad_price.empty:
+        _log.warning(
+            "validation: %d series have non-positive optimal_price: %s",
+            len(bad_price), list(bad_price["unique_id"][:5]),
+        )
+        issues += len(bad_price)
+
+    # 3. Prediction interval ordering
+    bad_pi = ds.pi_df[ds.pi_df["lower_q"] >= ds.pi_df["upper_q"]]
+    if not bad_pi.empty:
+        _log.warning(
+            "validation: %d series have lower_q >= upper_q in conformal PI",
+            len(bad_pi),
+        )
+        issues += len(bad_pi)
+
+    # 4. SHAP driver completeness
+    rank_counts = ds.shap_drivers_df.groupby("unique_id")["driver_rank"].nunique()
+    bad_ranks = rank_counts[rank_counts != 3]
+    if not bad_ranks.empty:
+        _log.warning(
+            "validation: %d series have incomplete SHAP driver ranks: %s",
+            len(bad_ranks), list(bad_ranks.index[:5]),
+        )
+        issues += len(bad_ranks)
+
+    # 5. Model smoke test
+    try:
+        uid = next(iter(ds.series_meta))
+        row = ds.latest_ctx_df[ds.latest_ctx_df["unique_id"] == uid].iloc[0]
+        X = row[ds.model_bundle["features"]].to_frame().T.astype(float)
+        pred = ds.model_bundle["model"].predict(X)
+        if len(pred) != 1 or pred[0] <= 0:
+            raise ValueError(f"unexpected prediction: {pred}")
+    except Exception as exc:
+        _log.warning("validation: model smoke test failed — %s", exc)
+        issues += 1
+
+    if issues == 0:
+        _log.info("DataStore validation passed — all checks OK.")
+    else:
+        _log.warning(
+            "DataStore validation completed with %d issue(s). "
+            "Some recommendations may be unreliable.",
+            issues,
+        )
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -179,7 +264,7 @@ def load_datastore() -> DataStore:
 
     recommendations_df = _load_csv("pricing_recommendations.csv")
 
-    return DataStore(
+    ds = DataStore(
         forecast_df=_load_csv("forecast_future.csv"),
         pi_df=_load_csv("conformal_pi_stats.csv"),
         recommendations_df=recommendations_df,
@@ -189,3 +274,5 @@ def load_datastore() -> DataStore:
         model_bundle=model_bundle,
         series_meta=_build_series_meta(recommendations_df),
     )
+    _validate(ds)
+    return ds

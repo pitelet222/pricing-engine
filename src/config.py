@@ -52,6 +52,11 @@ class Settings(BaseSettings):
         "quantification, and SHAP explainability for 86 avocado market series."
     )
 
+    # --------------------------------------------------------------- security
+    # Empty string = auth disabled (development / test default).
+    # Set PRICING_API_KEY=<secret> in production to enable X-API-Key checks.
+    api_key: str = ""
+
     # -------------------------------------------------------------- observability
     log_level: str = "INFO"
 

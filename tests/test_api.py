@@ -197,3 +197,76 @@ class TestSimulate:
         low = client.post("/simulate", json={"unique_id": KNOWN_UID, "price": 1.00}).json()
         high = client.post("/simulate", json={"unique_id": KNOWN_UID, "price": 2.00}).json()
         assert high["predicted_volume"] <= low["predicted_volume"]
+
+
+# ---------------------------------------------------------------------------
+# POST /batch-recommend
+# ---------------------------------------------------------------------------
+
+class TestBatchRecommend:
+    def test_status_ok(self, client):
+        r = client.post("/batch-recommend", json={"unique_ids": [KNOWN_UID]})
+        assert r.status_code == 200
+
+    def test_single_series(self, client):
+        data = client.post("/batch-recommend", json={"unique_ids": [KNOWN_UID]}).json()
+        assert data["requested"] == 1
+        assert data["found"] == 1
+        assert data["not_found"] == []
+        assert len(data["results"]) == 1
+
+    def test_unknown_ids_in_not_found(self, client):
+        data = client.post(
+            "/batch-recommend",
+            json={"unique_ids": [KNOWN_UID, UNKNOWN_UID]},
+        ).json()
+        assert data["requested"] == 2
+        assert data["found"] == 1
+        assert UNKNOWN_UID in data["not_found"]
+        assert len(data["results"]) == 1
+
+    def test_empty_list_rejected(self, client):
+        r = client.post("/batch-recommend", json={"unique_ids": []})
+        assert r.status_code == 422
+
+    def test_results_match_individual(self, client):
+        batch = client.post("/batch-recommend", json={"unique_ids": [KNOWN_UID]}).json()
+        individual = client.get(f"/recommend/{KNOWN_UID}").json()
+        assert batch["results"][0]["optimal_price"] == pytest.approx(individual["optimal_price"])
+
+
+# ---------------------------------------------------------------------------
+# X-Request-ID header tracing
+# ---------------------------------------------------------------------------
+
+class TestRequestId:
+    def test_x_request_id_in_response_headers(self, client):
+        r = client.get("/health")
+        assert "x-request-id" in r.headers
+
+    def test_request_id_is_8_chars(self, client):
+        r = client.get("/health")
+        assert len(r.headers["x-request-id"]) == 8
+
+    def test_different_requests_get_different_ids(self, client):
+        id1 = client.get("/health").headers["x-request-id"]
+        id2 = client.get("/health").headers["x-request-id"]
+        assert id1 != id2
+
+
+# ---------------------------------------------------------------------------
+# GET /metrics (Prometheus)
+# ---------------------------------------------------------------------------
+
+class TestMetrics:
+    def test_metrics_endpoint_ok(self, client):
+        assert client.get("/metrics").status_code == 200
+
+    def test_metrics_content_type(self, client):
+        r = client.get("/metrics")
+        assert "text/plain" in r.headers["content-type"]
+
+    def test_metrics_contains_request_count(self, client):
+        client.get("/health")  # ensure at least one request is recorded
+        r = client.get("/metrics")
+        assert "api_requests_total" in r.text

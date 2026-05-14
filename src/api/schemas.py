@@ -190,6 +190,42 @@ class ExplainResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# POST /batch-recommend
+# ---------------------------------------------------------------------------
+
+class BatchRecommendRequest(BaseModel):
+    unique_ids: list[str] = Field(
+        min_length=1,
+        max_length=86,
+        description="List of market series IDs to retrieve recommendations for (1–86 IDs).",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"unique_ids": ["Albany_conventional", "LosAngeles_organic"]}]
+        }
+    }
+
+
+class BatchRecommendResponse(BaseModel):
+    requested: int = Field(description="Number of unique_ids in the request")
+    found: int = Field(description="Number of series for which recommendations were found")
+    not_found: list[str] = Field(description="IDs that do not exist in the DataStore")
+    results: list[RecommendationResponse]
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "requested": 2,
+                "found": 1,
+                "not_found": ["UNKNOWN_SERIES"],
+                "results": ["... RecommendationResponse objects ..."],
+            }]
+        }
+    }
+
+
+# ---------------------------------------------------------------------------
 # POST /simulate
 # ---------------------------------------------------------------------------
 
