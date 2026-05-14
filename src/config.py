@@ -13,6 +13,7 @@ A .env file in the project root is also picked up automatically.
 from __future__ import annotations
 
 import pathlib
+from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -64,6 +65,20 @@ class Settings(BaseSettings):
     @classmethod
     def _upper(cls, v: str) -> str:
         return v.upper()
+
+    # "text" = human-readable (development); "json" = structured lines (production/ELK)
+    log_format: Literal["text", "json"] = "text"
+
+    # ------------------------------------------------------------------ CORS
+    # Comma-separated string of allowed origins.
+    #   PRICING_ALLOWED_ORIGINS=https://app.example.com,https://staging.example.com
+    # Default "*" is safe for local dev; lock down in production.
+    # Stored as str so the env var can be set naturally without JSON escaping.
+    allowed_origins: str = "*"
+
+    # ------------------------------------------------------- rate limiting
+    # Maximum POST /simulate requests per IP per 60-second window.
+    simulate_rate_limit: int = 30
 
 
 settings = Settings()

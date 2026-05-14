@@ -1,0 +1,1236 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Avocado Pricing Engine",
+    "description": "Dynamic pricing recommendations, demand forecasts, uncertainty quantification, and SHAP explainability for 86 avocado market series.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health",
+        "description": "Liveness / readiness check.\n\nReturns HTTP 200 with a JSON body as long as the DataStore loaded\nsuccessfully. Suitable for Docker and Kubernetes health probes.",
+        "operationId": "health_health_get",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/series": {
+      "get": {
+        "summary": "List Series",
+        "description": "List avocado market series with region and type metadata.\n\nSupports optional pagination via `limit` and `offset`. The `total` field\nalways reflects the full 86-series count regardless of page parameters.",
+        "operationId": "list_series_series_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86,
+              "minimum": 1,
+              "description": "Max series to return (1\u201386)",
+              "default": 86,
+              "title": "Limit"
+            },
+            "description": "Max series to return (1\u201386)"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Starting index",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Starting index"
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeriesListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/forecast/{unique_id}": {
+      "get": {
+        "summary": "Get Forecast",
+        "description": "Return the 12-week price forecast for one series.\n\nIncludes point forecasts from all ensemble components and the\nEnsemble_weighted conformal PI (90% nominal coverage).\nPI bounds are series-level constants derived from the CV residual distribution.",
+        "operationId": "get_forecast_forecast__unique_id__get",
+        "parameters": [
+          {
+            "name": "unique_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Unique Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommend/{unique_id}": {
+      "get": {
+        "summary": "Get Recommendation",
+        "description": "Return the revenue-maximising price recommendation for one series.\n\nOptimal price and revenue uplift are computed via grid search (\u00b130% bounds)\nusing the LightGBM demand model trained in notebook 04.",
+        "operationId": "get_recommendation_recommend__unique_id__get",
+        "parameters": [
+          {
+            "name": "unique_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Unique Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batch-recommend": {
+      "post": {
+        "summary": "Batch Recommend",
+        "description": "Retrieve revenue-maximising price recommendations for multiple series in one call.\n\nUnknown unique_ids are collected in not_found rather than raising a 404 \u2014\nthe caller receives recommendations for all valid IDs and a list of which\nIDs were unrecognised. This is more useful than an all-or-nothing failure\nwhen querying a large portfolio.\n\nAll results are served from the same in-process cache as GET /recommend/{id},\nso repeated batch calls for the same series cost nothing after the first.",
+        "operationId": "batch_recommend_batch_recommend_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRecommendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchRecommendResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/explain/{unique_id}": {
+      "get": {
+        "summary": "Get Explanation",
+        "description": "Return the top-3 SHAP demand drivers for one series.\n\nSHAP values are computed on a 3 000-row stratified sample in notebook 06.\nEach driver shows feature name, value, SHAP magnitude, and demand direction.",
+        "operationId": "get_explanation_explain__unique_id__get",
+        "parameters": [
+          {
+            "name": "unique_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Unique Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uncertainty/{unique_id}": {
+      "get": {
+        "summary": "Get Uncertainty",
+        "description": "Return the three-strategy uncertainty analysis for one series.\n\nConservative, balanced, and aggressive strategies each offer a different\nrisk/return trade-off. Risk metrics (downside_risk_pct, uplift_sharpe,\nstrategies_agree) help calibrate how reliable the recommendations are.\nAll values are derived from the conformal prediction intervals computed\nin notebook 05.",
+        "operationId": "get_uncertainty_uncertainty__unique_id__get",
+        "parameters": [
+          {
+            "name": "unique_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Unique Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UncertaintyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/simulate": {
+      "post": {
+        "summary": "Simulate",
+        "description": "Run live LightGBM inference for a custom price on one series.\n\nThe most recent feature row for the series is used as context; only\nAveragePrice is swapped out. All other features (lags, rolling stats,\ncalendar, region encodings) remain at their last observed values.\n\nThis answers: \"If I set price to X today, what demand would the model predict?\"",
+        "operationId": "simulate_simulate_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BatchRecommendRequest": {
+        "properties": {
+          "unique_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 86,
+            "minItems": 1,
+            "title": "Unique Ids",
+            "description": "List of market series IDs to retrieve recommendations for (1\u201386 IDs)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_ids"
+        ],
+        "title": "BatchRecommendRequest",
+        "examples": [
+          {
+            "unique_ids": [
+              "Albany_conventional",
+              "LosAngeles_organic"
+            ]
+          }
+        ]
+      },
+      "BatchRecommendResponse": {
+        "properties": {
+          "requested": {
+            "type": "integer",
+            "title": "Requested",
+            "description": "Number of unique_ids in the request"
+          },
+          "found": {
+            "type": "integer",
+            "title": "Found",
+            "description": "Number of series for which recommendations were found"
+          },
+          "not_found": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not Found",
+            "description": "IDs that do not exist in the DataStore"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/RecommendationResponse"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requested",
+          "found",
+          "not_found",
+          "results"
+        ],
+        "title": "BatchRecommendResponse",
+        "examples": [
+          {
+            "found": 1,
+            "not_found": [
+              "UNKNOWN_SERIES"
+            ],
+            "requested": 2,
+            "results": [
+              "... RecommendationResponse objects ..."
+            ]
+          }
+        ]
+      },
+      "ExplainResponse": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "drivers": {
+            "items": {
+              "$ref": "#/components/schemas/ShapDriver"
+            },
+            "type": "array",
+            "title": "Drivers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "drivers"
+        ],
+        "title": "ExplainResponse",
+        "examples": [
+          {
+            "drivers": [
+              {
+                "abs_shap_value": 1.53,
+                "direction": "increases_demand",
+                "driver_rank": 1,
+                "feature": "is_organic",
+                "feature_value": 0.0,
+                "shap_value": 1.53
+              },
+              {
+                "abs_shap_value": 1.083,
+                "direction": "decreases_demand",
+                "driver_rank": 2,
+                "feature": "region_volume_level",
+                "feature_value": 10.742,
+                "shap_value": -1.083
+              },
+              {
+                "abs_shap_value": 0.207,
+                "direction": "increases_demand",
+                "driver_rank": 3,
+                "feature": "plu_share_4770",
+                "feature_value": 0.000438,
+                "shap_value": 0.207
+              }
+            ],
+            "unique_id": "Albany_conventional"
+          }
+        ]
+      },
+      "ForecastPoint": {
+        "properties": {
+          "ds": {
+            "type": "string",
+            "format": "date",
+            "title": "Ds"
+          },
+          "ensemble_weighted": {
+            "type": "number",
+            "title": "Ensemble Weighted",
+            "description": "Ensemble (inverse-MAE weighted) point forecast (USD)"
+          },
+          "ensemble_lower": {
+            "type": "number",
+            "title": "Ensemble Lower",
+            "description": "Ensemble_weighted + conformal lower quantile (90 % PI)"
+          },
+          "ensemble_upper": {
+            "type": "number",
+            "title": "Ensemble Upper",
+            "description": "Ensemble_weighted + conformal upper quantile (90 % PI)"
+          },
+          "mstl_ets": {
+            "type": "number",
+            "title": "Mstl Ets",
+            "description": "MSTL + AutoETS component model forecast"
+          },
+          "mstl_arima": {
+            "type": "number",
+            "title": "Mstl Arima",
+            "description": "MSTL + AutoARIMA component model forecast"
+          },
+          "mstl_theta": {
+            "type": "number",
+            "title": "Mstl Theta",
+            "description": "MSTL + AutoTheta component model forecast"
+          },
+          "nhits": {
+            "type": "number",
+            "title": "Nhits",
+            "description": "NHITS neural forecast"
+          },
+          "nbeatsx": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nbeatsx",
+            "description": "NBEATSx neural forecast (None if not computed)"
+          },
+          "dlinear": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dlinear",
+            "description": "DLinear neural forecast (None if not computed)"
+          },
+          "seasonal_naive": {
+            "type": "number",
+            "title": "Seasonal Naive",
+            "description": "SeasonalNaive baseline forecast"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ds",
+          "ensemble_weighted",
+          "ensemble_lower",
+          "ensemble_upper",
+          "mstl_ets",
+          "mstl_arima",
+          "mstl_theta",
+          "nhits",
+          "seasonal_naive"
+        ],
+        "title": "ForecastPoint",
+        "examples": [
+          {
+            "ds": "2018-04-01",
+            "ensemble_lower": 0.99,
+            "ensemble_upper": 1.558,
+            "ensemble_weighted": 1.392,
+            "mstl_arima": 1.306,
+            "mstl_ets": 1.306,
+            "mstl_theta": 1.316,
+            "nhits": 1.506,
+            "seasonal_naive": 1.62
+          }
+        ]
+      },
+      "ForecastResponse": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "pi_coverage": {
+            "type": "number",
+            "title": "Pi Coverage",
+            "description": "Nominal conformal prediction-interval coverage",
+            "default": 0.9
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "points"
+        ],
+        "title": "ForecastResponse",
+        "examples": [
+          {
+            "pi_coverage": 0.9,
+            "points": [
+              "... 12 ForecastPoint objects ..."
+            ],
+            "unique_id": "Albany_conventional"
+          }
+        ]
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "series_loaded": {
+            "type": "integer",
+            "title": "Series Loaded",
+            "description": "Number of market series in the loaded DataStore"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "API version string"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "series_loaded",
+          "version"
+        ],
+        "title": "HealthResponse",
+        "examples": [
+          {
+            "series_loaded": 86,
+            "status": "ok",
+            "version": "0.1.0"
+          }
+        ]
+      },
+      "PricingStrategy": {
+        "properties": {
+          "opt_price": {
+            "type": "number",
+            "title": "Opt Price",
+            "description": "Revenue-optimising price for this strategy (USD)"
+          },
+          "rev_uplift_pct": {
+            "type": "number",
+            "title": "Rev Uplift Pct",
+            "description": "Expected revenue uplift vs current price (%)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "opt_price",
+          "rev_uplift_pct"
+        ],
+        "title": "PricingStrategy"
+      },
+      "RecommendationResponse": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "is_organic": {
+            "type": "boolean",
+            "title": "Is Organic"
+          },
+          "current_price": {
+            "type": "number",
+            "title": "Current Price",
+            "description": "Most recent actual price (USD)"
+          },
+          "optimal_price": {
+            "type": "number",
+            "title": "Optimal Price",
+            "description": "Revenue-maximising price (USD)"
+          },
+          "price_change_pct": {
+            "type": "number",
+            "title": "Price Change Pct",
+            "description": "(optimal - current) / current \u00d7 100"
+          },
+          "current_revenue": {
+            "type": "number",
+            "title": "Current Revenue"
+          },
+          "optimal_revenue": {
+            "type": "number",
+            "title": "Optimal Revenue"
+          },
+          "revenue_change_pct": {
+            "type": "number",
+            "title": "Revenue Change Pct",
+            "description": "(optimal_revenue - current_revenue) / current_revenue \u00d7 100"
+          },
+          "elasticity": {
+            "type": "number",
+            "title": "Elasticity",
+            "description": "Point price elasticity of demand (\u2202log_vol / \u2202log_price)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "is_organic",
+          "current_price",
+          "optimal_price",
+          "price_change_pct",
+          "current_revenue",
+          "optimal_revenue",
+          "revenue_change_pct",
+          "elasticity"
+        ],
+        "title": "RecommendationResponse",
+        "examples": [
+          {
+            "current_price": 1.57,
+            "current_revenue": 136376.88,
+            "elasticity": -0.054,
+            "is_organic": false,
+            "optimal_price": 1.76,
+            "optimal_revenue": 147733.4,
+            "price_change_pct": 12.0,
+            "revenue_change_pct": 8.33,
+            "unique_id": "Albany_conventional"
+          }
+        ]
+      },
+      "SeriesItem": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "region": {
+            "type": "string",
+            "title": "Region"
+          },
+          "avocado_type": {
+            "type": "string",
+            "enum": [
+              "organic",
+              "conventional"
+            ],
+            "title": "Avocado Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "region",
+          "avocado_type"
+        ],
+        "title": "SeriesItem"
+      },
+      "SeriesListResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of series in the DataStore (always 86)"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Maximum items returned in this response"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset",
+            "description": "Starting index of this response"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesItem"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "limit",
+          "offset",
+          "series"
+        ],
+        "title": "SeriesListResponse"
+      },
+      "ShapDriver": {
+        "properties": {
+          "driver_rank": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Driver Rank"
+          },
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "shap_value": {
+            "type": "number",
+            "title": "Shap Value"
+          },
+          "abs_shap_value": {
+            "type": "number",
+            "title": "Abs Shap Value"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "increases_demand",
+              "decreases_demand"
+            ],
+            "title": "Direction"
+          },
+          "feature_value": {
+            "type": "number",
+            "title": "Feature Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "driver_rank",
+          "feature",
+          "shap_value",
+          "abs_shap_value",
+          "direction",
+          "feature_value"
+        ],
+        "title": "ShapDriver",
+        "examples": [
+          {
+            "abs_shap_value": 1.53,
+            "direction": "increases_demand",
+            "driver_rank": 1,
+            "feature": "is_organic",
+            "feature_value": 0.0,
+            "shap_value": 1.53
+          }
+        ]
+      },
+      "SimulateRequest": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price",
+            "description": "Custom price to test (USD per avocado)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "price"
+        ],
+        "title": "SimulateRequest",
+        "examples": [
+          {
+            "price": 1.5,
+            "unique_id": "Albany_conventional"
+          }
+        ]
+      },
+      "SimulateResponse": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "predicted_log_volume": {
+            "type": "number",
+            "title": "Predicted Log Volume"
+          },
+          "predicted_volume": {
+            "type": "number",
+            "title": "Predicted Volume",
+            "description": "exp(predicted_log_volume)"
+          },
+          "current_price": {
+            "type": "number",
+            "title": "Current Price",
+            "description": "Most recent actual price for this series"
+          },
+          "current_volume": {
+            "type": "number",
+            "title": "Current Volume",
+            "description": "Most recent actual total volume for this series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "price",
+          "predicted_log_volume",
+          "predicted_volume",
+          "current_price",
+          "current_volume"
+        ],
+        "title": "SimulateResponse",
+        "examples": [
+          {
+            "current_price": 1.57,
+            "current_volume": 86913.0,
+            "predicted_log_volume": 11.92,
+            "predicted_volume": 149786.0,
+            "price": 1.5,
+            "unique_id": "Albany_conventional"
+          }
+        ]
+      },
+      "UncertaintyResponse": {
+        "properties": {
+          "unique_id": {
+            "type": "string",
+            "title": "Unique Id"
+          },
+          "is_organic": {
+            "type": "boolean",
+            "title": "Is Organic"
+          },
+          "current_price": {
+            "type": "number",
+            "title": "Current Price",
+            "description": "Most recent actual price (USD)"
+          },
+          "conservative": {
+            "$ref": "#/components/schemas/PricingStrategy",
+            "description": "Low-risk strategy: modest price adjustment"
+          },
+          "balanced": {
+            "$ref": "#/components/schemas/PricingStrategy",
+            "description": "Balanced risk/return strategy"
+          },
+          "aggressive": {
+            "$ref": "#/components/schemas/PricingStrategy",
+            "description": "High-return strategy: larger price move"
+          },
+          "rev_p10": {
+            "type": "number",
+            "title": "Rev P10",
+            "description": "10th-percentile revenue at current price (USD)"
+          },
+          "rev_p50": {
+            "type": "number",
+            "title": "Rev P50",
+            "description": "Median revenue at current price (USD)"
+          },
+          "rev_p90": {
+            "type": "number",
+            "title": "Rev P90",
+            "description": "90th-percentile revenue at current price (USD)"
+          },
+          "rev_spread_pct": {
+            "type": "number",
+            "title": "Rev Spread Pct",
+            "description": "(rev_p90 \u2212 rev_p10) / rev_p50 \u00d7 100 \u2014 revenue uncertainty width"
+          },
+          "downside_risk_pct": {
+            "type": "number",
+            "title": "Downside Risk Pct",
+            "description": "Probability-weighted downside vs median revenue (%)"
+          },
+          "uplift_mean": {
+            "type": "number",
+            "title": "Uplift Mean",
+            "description": "Mean expected revenue uplift across price grid (%)"
+          },
+          "uplift_std": {
+            "type": "number",
+            "title": "Uplift Std",
+            "description": "Std dev of revenue uplift across price grid"
+          },
+          "uplift_sharpe": {
+            "type": "number",
+            "title": "Uplift Sharpe",
+            "description": "uplift_mean / uplift_std \u2014 risk-adjusted score"
+          },
+          "strategies_agree": {
+            "type": "boolean",
+            "title": "Strategies Agree",
+            "description": "True when conservative and aggressive both recommend the same price direction"
+          },
+          "price_direction_conservative": {
+            "type": "integer",
+            "title": "Price Direction Conservative",
+            "description": "Conservative strategy price direction: +1 = increase, \u22121 = decrease"
+          },
+          "price_direction_aggressive": {
+            "type": "integer",
+            "title": "Price Direction Aggressive",
+            "description": "Aggressive strategy price direction: +1 = increase, \u22121 = decrease"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unique_id",
+          "is_organic",
+          "current_price",
+          "conservative",
+          "balanced",
+          "aggressive",
+          "rev_p10",
+          "rev_p50",
+          "rev_p90",
+          "rev_spread_pct",
+          "downside_risk_pct",
+          "uplift_mean",
+          "uplift_std",
+          "uplift_sharpe",
+          "strategies_agree",
+          "price_direction_conservative",
+          "price_direction_aggressive"
+        ],
+        "title": "UncertaintyResponse",
+        "examples": [
+          {
+            "aggressive": {
+              "opt_price": 1.8,
+              "rev_uplift_pct": 12.1
+            },
+            "balanced": {
+              "opt_price": 1.72,
+              "rev_uplift_pct": 8.6
+            },
+            "conservative": {
+              "opt_price": 1.65,
+              "rev_uplift_pct": 4.2
+            },
+            "current_price": 1.57,
+            "downside_risk_pct": 8.3,
+            "is_organic": false,
+            "price_direction_aggressive": 1,
+            "price_direction_conservative": 1,
+            "rev_p10": 90000.0,
+            "rev_p50": 136376.88,
+            "rev_p90": 190000.0,
+            "rev_spread_pct": 73.5,
+            "strategies_agree": true,
+            "unique_id": "Albany_conventional",
+            "uplift_mean": 8.2,
+            "uplift_sharpe": 2.6,
+            "uplift_std": 3.1
+          }
+        ]
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

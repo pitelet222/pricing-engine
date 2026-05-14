@@ -41,7 +41,9 @@ class SeriesItem(BaseModel):
 
 
 class SeriesListResponse(BaseModel):
-    total: int
+    total: int = Field(description="Total number of series in the DataStore (always 86)")
+    limit: int = Field(description="Maximum items returned in this response")
+    offset: int = Field(description="Starting index of this response")
     series: list[SeriesItem]
 
 
@@ -184,6 +186,77 @@ class ExplainResponse(BaseModel):
                     {"driver_rank": 3, "feature": "plu_share_4770", "shap_value": 0.207,
                      "abs_shap_value": 0.207, "direction": "increases_demand", "feature_value": 0.000438},
                 ],
+            }]
+        }
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /uncertainty/{unique_id}
+# ---------------------------------------------------------------------------
+
+class PricingStrategy(BaseModel):
+    opt_price: float = Field(description="Revenue-optimising price for this strategy (USD)")
+    rev_uplift_pct: float = Field(
+        description="Expected revenue uplift vs current price (%)"
+    )
+
+
+class UncertaintyResponse(BaseModel):
+    unique_id: str
+    is_organic: bool
+    current_price: float = Field(description="Most recent actual price (USD)")
+    conservative: PricingStrategy = Field(
+        description="Low-risk strategy: modest price adjustment"
+    )
+    balanced: PricingStrategy = Field(
+        description="Balanced risk/return strategy"
+    )
+    aggressive: PricingStrategy = Field(
+        description="High-return strategy: larger price move"
+    )
+    rev_p10: float = Field(description="10th-percentile revenue at current price (USD)")
+    rev_p50: float = Field(description="Median revenue at current price (USD)")
+    rev_p90: float = Field(description="90th-percentile revenue at current price (USD)")
+    rev_spread_pct: float = Field(
+        description="(rev_p90 − rev_p10) / rev_p50 × 100 — revenue uncertainty width"
+    )
+    downside_risk_pct: float = Field(
+        description="Probability-weighted downside vs median revenue (%)"
+    )
+    uplift_mean: float = Field(description="Mean expected revenue uplift across price grid (%)")
+    uplift_std: float = Field(description="Std dev of revenue uplift across price grid")
+    uplift_sharpe: float = Field(description="uplift_mean / uplift_std — risk-adjusted score")
+    strategies_agree: bool = Field(
+        description="True when conservative and aggressive both recommend the same price direction"
+    )
+    price_direction_conservative: int = Field(
+        description="Conservative strategy price direction: +1 = increase, −1 = decrease"
+    )
+    price_direction_aggressive: int = Field(
+        description="Aggressive strategy price direction: +1 = increase, −1 = decrease"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{
+                "unique_id": "Albany_conventional",
+                "is_organic": False,
+                "current_price": 1.57,
+                "conservative": {"opt_price": 1.65, "rev_uplift_pct": 4.2},
+                "balanced": {"opt_price": 1.72, "rev_uplift_pct": 8.6},
+                "aggressive": {"opt_price": 1.80, "rev_uplift_pct": 12.1},
+                "rev_p10": 90_000.0,
+                "rev_p50": 136_376.88,
+                "rev_p90": 190_000.0,
+                "rev_spread_pct": 73.5,
+                "downside_risk_pct": 8.3,
+                "uplift_mean": 8.2,
+                "uplift_std": 3.1,
+                "uplift_sharpe": 2.6,
+                "strategies_agree": True,
+                "price_direction_conservative": 1,
+                "price_direction_aggressive": 1,
             }]
         }
     }

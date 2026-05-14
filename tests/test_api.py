@@ -270,3 +270,91 @@ class TestMetrics:
         client.get("/health")  # ensure at least one request is recorded
         r = client.get("/metrics")
         assert "api_requests_total" in r.text
+
+
+# ---------------------------------------------------------------------------
+# GET /uncertainty/{unique_id}
+# ---------------------------------------------------------------------------
+
+class TestUncertainty:
+    def test_status_ok(self, client):
+        assert client.get(f"/uncertainty/{KNOWN_UID}").status_code == 200
+
+    def test_404_unknown(self, client):
+        assert client.get(f"/uncertainty/{UNKNOWN_UID}").status_code == 404
+
+    def test_required_fields(self, client):
+        data = client.get(f"/uncertainty/{KNOWN_UID}").json()
+        for field in (
+            "unique_id", "is_organic", "current_price",
+            "conservative", "balanced", "aggressive",
+            "rev_p10", "rev_p50", "rev_p90", "rev_spread_pct",
+            "downside_risk_pct", "uplift_mean", "uplift_std", "uplift_sharpe",
+            "strategies_agree", "price_direction_conservative", "price_direction_aggressive",
+        ):
+            assert field in data, f"missing field: {field}"
+
+    def test_strategy_fields(self, client):
+        data = client.get(f"/uncertainty/{KNOWN_UID}").json()
+        for strategy in ("conservative", "balanced", "aggressive"):
+            assert "opt_price" in data[strategy]
+            assert "rev_uplift_pct" in data[strategy]
+            assert data[strategy]["opt_price"] > 0
+
+    def test_prices_positive(self, client):
+        data = client.get(f"/uncertainty/{KNOWN_UID}").json()
+        assert data["current_price"] > 0
+
+    def test_strategies_agree_is_bool(self, client):
+        data = client.get(f"/uncertainty/{KNOWN_UID}").json()
+        assert isinstance(data["strategies_agree"], bool)
+
+    def test_direction_values_valid(self, client):
+        data = client.get(f"/uncertainty/{KNOWN_UID}").json()
+        assert data["price_direction_conservative"] in (1, -1)
+        assert data["price_direction_aggressive"] in (1, -1)
+
+    def test_percentiles_ordered(self, client):
+        data = client.get(f"/uncertainty/{KNOWN_UID}").json()
+        assert data["rev_p10"] <= data["rev_p50"] <= data["rev_p90"]
+
+
+# ---------------------------------------------------------------------------
+# GET /series — pagination
+# ---------------------------------------------------------------------------
+
+class TestSeriesPagination:
+    def test_default_returns_all(self, client):
+        data = client.get("/series").json()
+        assert data["total"] == 86
+        assert len(data["series"]) == 86
+        assert data["limit"] == 86
+        assert data["offset"] == 0
+
+    def test_custom_limit(self, client):
+        data = client.get("/series?limit=5").json()
+        assert len(data["series"]) == 5
+        assert data["total"] == 86
+        assert data["limit"] == 5
+
+    def test_custom_offset(self, client):
+        data = client.get("/series?limit=86&offset=80").json()
+        assert len(data["series"]) == 6  # 86 - 80
+
+    def test_offset_beyond_total_returns_empty(self, client):
+        data = client.get("/series?offset=100").json()
+        assert data["series"] == []
+        assert data["total"] == 86
+
+    def test_limit_and_offset_return_different_pages(self, client):
+        first = client.get("/series?limit=10&offset=0").json()["series"]
+        second = client.get("/series?limit=10&offset=10").json()["series"]
+        first_ids = {s["unique_id"] for s in first}
+        second_ids = {s["unique_id"] for s in second}
+        assert first_ids.isdisjoint(second_ids)
+
+    def test_limit_above_86_rejected(self, client):
+        assert client.get("/series?limit=87").status_code == 422
+
+    def test_limit_zero_rejected(self, client):
+        assert client.get("/series?limit=0").status_code == 422

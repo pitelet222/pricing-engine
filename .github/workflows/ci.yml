@@ -10,11 +10,12 @@ jobs:
   # ---------------------------------------------------------------------------
   # Job 1 — Schema & config unit tests with coverage gate
   #
-  # Covers the four modules that can be fully tested without model artifacts:
+  # Covers the six modules that can be fully tested without model artifacts:
   #   src/api/schemas.py  src/config.py  src/api/auth.py  src/api/metrics.py
+  #   src/api/logging.py  src/api/rate_limit.py
   #
-  # Coverage threshold is set on those modules only (not the full src/ tree)
-  # so the gate is meaningful rather than trivially low due to uncoverable code.
+  # Coverage threshold is set on those modules only so the gate is meaningful
+  # rather than trivially low due to uncoverable artifact-gated code.
   # ---------------------------------------------------------------------------
   test:
     name: Schema & unit tests (+ coverage)
@@ -43,11 +44,13 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest tests/test_schemas.py tests/test_config.py \
+          pytest tests/test_schemas.py tests/test_config.py tests/test_rate_limit.py \
             --cov=src/api/schemas \
             --cov=src/config \
             --cov=src/api/auth \
             --cov=src/api/metrics \
+            --cov=src/api/logging \
+            --cov=src/api/rate_limit \
             --cov-report=term-missing \
             --cov-fail-under=90 \
             -v --tb=short
@@ -93,6 +96,12 @@ jobs:
       - name: Verify metrics import cleanly
         run: python -c "from src.api.metrics import REQUEST_COUNT; print('metrics OK')"
 
+      - name: Verify logging module imports cleanly
+        run: python -c "from src.api.logging import JsonFormatter; print('logging OK')"
+
+      - name: Verify rate_limit imports cleanly
+        run: python -c "from src.api.rate_limit import check_rate_limit; print('rate_limit OK')"
+
   # ---------------------------------------------------------------------------
   # Job 3 — Ruff linting
   # ---------------------------------------------------------------------------
@@ -114,3 +123,34 @@ jobs:
 
       - name: Run ruff
         run: ruff check src/ tests/ scripts/
+
+  # ---------------------------------------------------------------------------
+  # Job 4 — OpenAPI spec up-to-date
+  # ---------------------------------------------------------------------------
+  openapi:
+    name: OpenAPI spec up-to-date
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install runtime dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            "fastapi>=0.109" \
+            "pydantic>=2.5" \
+            "pydantic-settings>=2.2" \
+            "prometheus-client>=0.20"
+
+      - name: Regenerate OpenAPI spec
+        run: python scripts/export_openapi.py
+
+      - name: Verify spec is committed and current
+        run: git diff --exit-code docs/openapi.json

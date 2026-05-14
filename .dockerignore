@@ -1,0 +1,43 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Dev / test / CI
+.git/
+.github/
+notebooks/
+tests/
+scripts/
+docs/
+*.ipynb
+pytest.ini
+ruff.toml
+.pre-commit-config.yaml
+requirements-dev.txt
+
+# Environments / secrets
+.env
+venv/
+.venv/
+env/
+.idea/
+.vscode/
+*.swp
+
+# Data artifacts (mounted as volumes at runtime, not baked in)
+data/
+lightning_logs/
+
+# Logs / coverage
+*.log
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db

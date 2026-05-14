@@ -54,6 +54,13 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
             request.url.path,
             response.status_code,
             duration_s * 1000,
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status": response.status_code,
+                "duration_ms": round(duration_s * 1000, 1),
+            },
         )
 
         REQUEST_COUNT.labels(

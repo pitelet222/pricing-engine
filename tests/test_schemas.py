@@ -19,12 +19,14 @@ from src.api.schemas import (
     ForecastPoint,
     ForecastResponse,
     HealthResponse,
+    PricingStrategy,
     RecommendationResponse,
     SeriesItem,
     SeriesListResponse,
     ShapDriver,
     SimulateRequest,
     SimulateResponse,
+    UncertaintyResponse,
 )
 
 # ---------------------------------------------------------------------------
@@ -65,9 +67,16 @@ class TestSeriesItem:
 
     def test_list_response(self):
         items = [SeriesItem(unique_id=f"s{i}", region="R", avocado_type="organic") for i in range(3)]
-        resp = SeriesListResponse(total=3, series=items)
+        resp = SeriesListResponse(total=3, limit=3, offset=0, series=items)
         assert resp.total == 3
+        assert resp.limit == 3
+        assert resp.offset == 0
         assert len(resp.series) == 3
+
+    def test_list_response_missing_limit_raises(self):
+        items = [SeriesItem(unique_id="s0", region="R", avocado_type="organic")]
+        with pytest.raises(ValidationError):
+            SeriesListResponse(total=1, series=items)  # missing limit and offset
 
 
 # ---------------------------------------------------------------------------
@@ -274,3 +283,65 @@ class TestBatchRecommendResponse:
         resp = BatchRecommendResponse(requested=1, found=0, not_found=["X"], results=[])
         assert resp.found == 0
         assert resp.results == []
+
+
+# ---------------------------------------------------------------------------
+# PricingStrategy / UncertaintyResponse
+# ---------------------------------------------------------------------------
+
+_STRATEGY = PricingStrategy(opt_price=1.72, rev_uplift_pct=8.6)
+
+_UNCERTAINTY_PAYLOAD = dict(
+    unique_id="Albany_conventional",
+    is_organic=False,
+    current_price=1.57,
+    conservative=_STRATEGY,
+    balanced=_STRATEGY,
+    aggressive=_STRATEGY,
+    rev_p10=90_000.0,
+    rev_p50=136_376.88,
+    rev_p90=190_000.0,
+    rev_spread_pct=73.5,
+    downside_risk_pct=8.3,
+    uplift_mean=8.2,
+    uplift_std=3.1,
+    uplift_sharpe=2.6,
+    strategies_agree=True,
+    price_direction_conservative=1,
+    price_direction_aggressive=1,
+)
+
+
+class TestPricingStrategy:
+    def test_valid(self):
+        s = PricingStrategy(opt_price=1.80, rev_uplift_pct=12.1)
+        assert s.opt_price == pytest.approx(1.80)
+
+    def test_missing_field(self):
+        with pytest.raises(ValidationError):
+            PricingStrategy(opt_price=1.80)
+
+
+class TestUncertaintyResponse:
+    def test_valid(self):
+        resp = UncertaintyResponse(**_UNCERTAINTY_PAYLOAD)
+        assert resp.unique_id == "Albany_conventional"
+        assert resp.strategies_agree is True
+        assert resp.price_direction_conservative == 1
+        assert resp.price_direction_aggressive == 1
+
+    def test_is_organic_bool(self):
+        resp = UncertaintyResponse(**_UNCERTAINTY_PAYLOAD)
+        assert isinstance(resp.is_organic, bool)
+        assert resp.is_organic is False
+
+    def test_nested_strategies(self):
+        resp = UncertaintyResponse(**_UNCERTAINTY_PAYLOAD)
+        assert isinstance(resp.conservative, PricingStrategy)
+        assert isinstance(resp.balanced, PricingStrategy)
+        assert isinstance(resp.aggressive, PricingStrategy)
+
+    def test_missing_strategy_raises(self):
+        payload = {k: v for k, v in _UNCERTAINTY_PAYLOAD.items() if k != "balanced"}
+        with pytest.raises(ValidationError):
+            UncertaintyResponse(**payload)

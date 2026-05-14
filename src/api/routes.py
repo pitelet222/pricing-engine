@@ -22,9 +22,10 @@ from __future__ import annotations
 import math
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from src.api.metrics import CACHE_HITS, CACHE_MISSES
+from src.api.rate_limit import check_rate_limit
 from src.api.schemas import (
     BatchRecommendRequest,
     BatchRecommendResponse,
@@ -32,12 +33,14 @@ from src.api.schemas import (
     ForecastPoint,
     ForecastResponse,
     HealthResponse,
+    PricingStrategy,
     RecommendationResponse,
     SeriesItem,
     SeriesListResponse,
     ShapDriver,
     SimulateRequest,
     SimulateResponse,
+    UncertaintyResponse,
 )
 from src.config import settings
 from src.data.loader import DataStore
@@ -109,25 +112,37 @@ def health(ds: DataStoreDep) -> HealthResponse:
 # ---------------------------------------------------------------------------
 
 @router.get("/series", response_model=SeriesListResponse)
-def list_series(ds: DataStoreDep) -> SeriesListResponse:
-    """List all 86 avocado market series with region and type metadata."""
-    _ep = "/series"
-    if _ep in _CACHE:
-        _cache_hit(_ep)
-        return _CACHE[_ep]
+def list_series(
+    ds: DataStoreDep,
+    limit: int = Query(default=86, ge=1, le=86, description="Max series to return (1–86)"),
+    offset: int = Query(default=0, ge=0, description="Starting index"),
+) -> SeriesListResponse:
+    """
+    List avocado market series with region and type metadata.
 
-    _cache_miss(_ep)
-    items = [
-        SeriesItem(
-            unique_id=uid,
-            region=meta["region"],
-            avocado_type=meta["avocado_type"],
-        )
-        for uid, meta in ds.series_meta.items()
-    ]
-    result = SeriesListResponse(total=len(items), series=items)
-    _CACHE[_ep] = result
-    return result
+    Supports optional pagination via `limit` and `offset`. The `total` field
+    always reflects the full 86-series count regardless of page parameters.
+    """
+    _ep = "/series"
+    # Cache the full ordered list; slice per request (O(limit), zero I/O).
+    _all_key = f"{_ep}:all"
+    if _all_key not in _CACHE:
+        _cache_miss(_ep)
+        all_items = [
+            SeriesItem(
+                unique_id=uid,
+                region=meta["region"],
+                avocado_type=meta["avocado_type"],
+            )
+            for uid, meta in ds.series_meta.items()
+        ]
+        _CACHE[_all_key] = all_items
+    else:
+        _cache_hit(_ep)
+
+    all_items: list[SeriesItem] = _CACHE[_all_key]
+    page = all_items[offset : offset + limit]
+    return SeriesListResponse(total=len(all_items), limit=limit, offset=offset, series=page)
 
 
 # ---------------------------------------------------------------------------
@@ -299,10 +314,72 @@ def get_explanation(unique_id: str, ds: DataStoreDep) -> ExplainResponse:
 
 
 # ---------------------------------------------------------------------------
+# GET /uncertainty/{unique_id}
+# ---------------------------------------------------------------------------
+
+@router.get("/uncertainty/{unique_id}", response_model=UncertaintyResponse)
+def get_uncertainty(unique_id: str, ds: DataStoreDep) -> UncertaintyResponse:
+    """
+    Return the three-strategy uncertainty analysis for one series.
+
+    Conservative, balanced, and aggressive strategies each offer a different
+    risk/return trade-off. Risk metrics (downside_risk_pct, uplift_sharpe,
+    strategies_agree) help calibrate how reliable the recommendations are.
+    All values are derived from the conformal prediction intervals computed
+    in notebook 05.
+    """
+    _require_series(ds, unique_id)
+    _ep = "/uncertainty/{unique_id}"
+    cache_key = f"uncertainty:{unique_id}"
+
+    if cache_key in _CACHE:
+        _cache_hit(_ep)
+        return _CACHE[cache_key]
+
+    _cache_miss(_ep)
+    row = ds.uncertainty_df[ds.uncertainty_df["unique_id"] == unique_id].iloc[0]
+
+    result = UncertaintyResponse(
+        unique_id=unique_id,
+        is_organic=bool(row["is_organic"]),
+        current_price=float(row["current_price"]),
+        conservative=PricingStrategy(
+            opt_price=float(row["opt_price_conservative"]),
+            rev_uplift_pct=float(row["rev_uplift_conservative"]),
+        ),
+        balanced=PricingStrategy(
+            opt_price=float(row["opt_price_balanced"]),
+            rev_uplift_pct=float(row["rev_uplift_balanced"]),
+        ),
+        aggressive=PricingStrategy(
+            opt_price=float(row["opt_price_aggressive"]),
+            rev_uplift_pct=float(row["rev_uplift_aggressive"]),
+        ),
+        rev_p10=float(row["rev_p10_current"]),
+        rev_p50=float(row["rev_p50_current"]),
+        rev_p90=float(row["rev_p90_current"]),
+        rev_spread_pct=float(row["rev_spread_pct"]),
+        downside_risk_pct=float(row["downside_risk_pct"]),
+        uplift_mean=float(row["uplift_mean"]),
+        uplift_std=float(row["uplift_std"]),
+        uplift_sharpe=float(row["uplift_sharpe"]),
+        strategies_agree=bool(row["strategies_agree"]),
+        price_direction_conservative=int(row["price_direction_conservative"]),
+        price_direction_aggressive=int(row["price_direction_aggressive"]),
+    )
+    _CACHE[cache_key] = result
+    return result
+
+
+# ---------------------------------------------------------------------------
 # POST /simulate
 # ---------------------------------------------------------------------------
 
-@router.post("/simulate", response_model=SimulateResponse)
+@router.post(
+    "/simulate",
+    response_model=SimulateResponse,
+    dependencies=[Depends(check_rate_limit)],
+)
 def simulate(req: SimulateRequest, ds: DataStoreDep) -> SimulateResponse:
     """
     Run live LightGBM inference for a custom price on one series.

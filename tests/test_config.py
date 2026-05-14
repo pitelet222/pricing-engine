@@ -5,6 +5,8 @@ These tests always run in CI. They verify that Settings loads with sensible
 defaults and that env var overrides work correctly.
 """
 import asyncio
+import json
+import logging
 
 import pytest
 from fastapi import HTTPException
@@ -108,3 +110,115 @@ class TestMetricsImport:
         assert REQUEST_LATENCY is not None
         assert CACHE_HITS is not None
         assert CACHE_MISSES is not None
+
+
+# ---------------------------------------------------------------------------
+# Tier 4 settings: log_format, allowed_origins, simulate_rate_limit
+# ---------------------------------------------------------------------------
+
+class TestTier4Settings:
+    def test_log_format_default_is_text(self):
+        from src.config import settings
+        assert settings.log_format == "text"
+
+    def test_log_format_json_accepted(self):
+        from src.config import Settings
+        s = Settings(log_format="json")
+        assert s.log_format == "json"
+
+    def test_log_format_invalid_rejected(self):
+        from pydantic import ValidationError
+
+        from src.config import Settings
+        with pytest.raises(ValidationError):
+            Settings(log_format="yaml")
+
+    def test_allowed_origins_default(self):
+        from src.config import settings
+        assert settings.allowed_origins == "*"
+
+    def test_allowed_origins_env_override(self, monkeypatch):
+        monkeypatch.setenv("PRICING_ALLOWED_ORIGINS", "https://a.com,https://b.com")
+        from src.config import Settings
+        s = Settings()
+        # stored as-is; main.py splits on comma when building CORSMiddleware
+        assert s.allowed_origins == "https://a.com,https://b.com"
+
+    def test_allowed_origins_parses_to_list(self, monkeypatch):
+        monkeypatch.setenv("PRICING_ALLOWED_ORIGINS", "https://a.com,https://b.com")
+        from src.config import Settings
+        s = Settings()
+        origins = [o.strip() for o in s.allowed_origins.split(",") if o.strip()]
+        assert origins == ["https://a.com", "https://b.com"]
+
+    def test_simulate_rate_limit_default(self):
+        from src.config import settings
+        assert settings.simulate_rate_limit == 30
+
+    def test_simulate_rate_limit_override(self, monkeypatch):
+        monkeypatch.setenv("PRICING_SIMULATE_RATE_LIMIT", "100")
+        from src.config import Settings
+        s = Settings()
+        assert s.simulate_rate_limit == 100
+
+
+# ---------------------------------------------------------------------------
+# JsonFormatter — structured log output
+# ---------------------------------------------------------------------------
+
+class TestJsonFormatter:
+    def _make_record(self, msg: str = "hello", level: int = logging.INFO, **extra):
+        record = logging.LogRecord(
+            name="test.logger",
+            level=level,
+            pathname="",
+            lineno=0,
+            msg=msg,
+            args=(),
+            exc_info=None,
+        )
+        for k, v in extra.items():
+            setattr(record, k, v)
+        return record
+
+    def test_produces_valid_json(self):
+        from src.api.logging import JsonFormatter
+        formatter = JsonFormatter()
+        output = formatter.format(self._make_record("startup"))
+        parsed = json.loads(output)
+        assert parsed["level"] == "INFO"
+        assert parsed["message"] == "startup"
+        assert "timestamp" in parsed
+        assert "logger" in parsed
+
+    def test_includes_extra_access_fields(self):
+        from src.api.logging import JsonFormatter
+        formatter = JsonFormatter()
+        record = self._make_record(
+            "req",
+            request_id="abc12345",
+            method="GET",
+            path="/health",
+            status=200,
+            duration_ms=1.5,
+        )
+        parsed = json.loads(formatter.format(record))
+        assert parsed["request_id"] == "abc12345"
+        assert parsed["method"] == "GET"
+        assert parsed["path"] == "/health"
+        assert parsed["status"] == 200
+        assert parsed["duration_ms"] == pytest.approx(1.5)
+
+    def test_extra_fields_absent_when_not_set(self):
+        from src.api.logging import JsonFormatter
+        formatter = JsonFormatter()
+        parsed = json.loads(formatter.format(self._make_record("startup")))
+        for field in ("request_id", "method", "path", "status", "duration_ms"):
+            assert field not in parsed
+
+    def test_warning_level_captured(self):
+        from src.api.logging import JsonFormatter
+        formatter = JsonFormatter()
+        record = self._make_record("oops", level=logging.WARNING)
+        parsed = json.loads(formatter.format(record))
+        assert parsed["level"] == "WARNING"
