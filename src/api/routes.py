@@ -81,8 +81,8 @@ def get_forecast(unique_id: str, ds: DataStoreDep) -> ForecastResponse:
     """
     Return the 12-week price forecast for one series.
 
-    Includes point forecasts from all four models (AutoETS, NHITS, AutoARIMA,
-    SeasonalNaive) and AutoETS conformal prediction interval (80 % coverage).
+    Includes point forecasts from all 8 models (7 ensemble components +
+    SeasonalNaive baseline) and Ensemble_weighted conformal PI (80 % coverage).
     PI bounds are series-level constants derived from the CV residual distribution.
     """
     _require_series(ds, unique_id)
@@ -95,11 +95,15 @@ def get_forecast(unique_id: str, ds: DataStoreDep) -> ForecastResponse:
     points = [
         ForecastPoint(
             ds=row["ds"],
-            auto_ets=row["AutoETS"],
-            auto_ets_lower=row["AutoETS"] + lower_q,
-            auto_ets_upper=row["AutoETS"] + upper_q,
+            ensemble_weighted=row["Ensemble_weighted"],
+            ensemble_lower=row["Ensemble_weighted"] + lower_q,
+            ensemble_upper=row["Ensemble_weighted"] + upper_q,
+            mstl_ets=row["MSTL_ETS"],
+            mstl_arima=row["MSTL_ARIMA"],
+            mstl_theta=row["MSTL_Theta"],
             nhits=row["NHITS"],
-            auto_arima=row["AutoARIMA"],
+            nbeatsx=row["NBEATSx"],
+            dlinear=row["DLinear"],
             seasonal_naive=row["SeasonalNaive"],
         )
         for _, row in series_forecast.iterrows()

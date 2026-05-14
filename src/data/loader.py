@@ -41,12 +41,13 @@ class DataStore:
 
     Attributes
     ----------
-    forecast_df : DataFrame (1 032 × 7)
-        12-week point forecasts per series. Models: AutoETS, NHITS, AutoARIMA,
-        SeasonalNaive. Indexed by unique_id + ds.
+    forecast_df : DataFrame (1 032 × ~12)
+        12-week point forecasts per series. Models: Ensemble_weighted, MSTL_ETS,
+        MSTL_ARIMA, MSTL_Theta, NHITS, NBEATSx, DLinear, SeasonalNaive.
+        Indexed by unique_id + ds.
     pi_df : DataFrame (86 × 7)
         Per-series conformal prediction-interval stats (lower_q, upper_q,
-        resid_std, pi_width …). Applied symmetrically to AutoETS forecasts.
+        resid_std, pi_width …). Applied to Ensemble_weighted forecasts.
     recommendations_df : DataFrame (86 × 9)
         Optimal price, revenue uplift, price elasticity per series.
     uncertainty_df : DataFrame (86 × 20)
