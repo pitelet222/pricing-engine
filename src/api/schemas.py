@@ -7,7 +7,7 @@ data/outputs/. If a notebook changes a column name, update here first.
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -44,8 +44,8 @@ class ForecastPoint(BaseModel):
     mstl_arima: float = Field(description="MSTL + AutoARIMA component model forecast")
     mstl_theta: float = Field(description="MSTL + AutoTheta component model forecast")
     nhits: float = Field(description="NHITS neural forecast")
-    nbeatsx: float = Field(description="NBEATSx neural forecast")
-    dlinear: float = Field(description="DLinear neural forecast")
+    nbeatsx: Optional[float] = Field(default=None, description="NBEATSx neural forecast (None if not computed)")
+    dlinear: Optional[float] = Field(default=None, description="DLinear neural forecast (None if not computed)")
     seasonal_naive: float = Field(description="SeasonalNaive baseline forecast")
 
 

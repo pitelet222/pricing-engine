@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [master, "feature/**"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    name: Schema & unit tests (no artifacts required)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # Install only the packages needed for the artifact-free test suite.
+      # The full requirements.txt (PyTorch, NeuralForecast, …) is too heavy for CI.
+      - name: Install CI dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            "fastapi>=0.109" \
+            "pydantic>=2.5" \
+            "pytest>=8.0" \
+            "httpx>=0.27"
+
+      - name: Run schema unit tests
+        run: pytest tests/test_schemas.py -v --tb=short
+
+  lint:
+    name: Import sanity check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install CI dependencies
+        run: |
+          pip install --upgrade pip
+          pip install "fastapi>=0.109" "pydantic>=2.5"
+
+      - name: Verify schemas import cleanly
+        run: python -c "from src.api.schemas import *; print('schemas OK')"
+
+      - name: Verify routes import cleanly
+        run: python -c "from src.api.routes import router; print('routes OK')"

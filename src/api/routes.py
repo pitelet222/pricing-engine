@@ -102,8 +102,8 @@ def get_forecast(unique_id: str, ds: DataStoreDep) -> ForecastResponse:
             mstl_arima=row["MSTL_ARIMA"],
             mstl_theta=row["MSTL_Theta"],
             nhits=row["NHITS"],
-            nbeatsx=row["NBEATSx"],
-            dlinear=row["DLinear"],
+            nbeatsx=row.get("NBEATSx"),
+            dlinear=row.get("DLinear"),
             seasonal_naive=row["SeasonalNaive"],
         )
         for _, row in series_forecast.iterrows()
