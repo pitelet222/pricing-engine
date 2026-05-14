@@ -103,7 +103,6 @@ class TestModelBundle:
         assert len(ds.model_bundle["features"]) == 26
 
     def test_model_can_predict(self, ds):
-        import pandas as pd
         row = ds.latest_ctx_df[
             ds.latest_ctx_df["unique_id"] == "Albany_conventional"
         ].iloc[0]

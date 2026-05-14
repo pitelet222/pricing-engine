@@ -41,6 +41,7 @@ optuna>=3.5                  # Hyperparameter tuning
 fastapi>=0.109
 uvicorn[standard]>=0.27
 pydantic>=2.5
+pydantic-settings>=2.2
 
 # ---------- Dashboard ----------
 streamlit>=1.31

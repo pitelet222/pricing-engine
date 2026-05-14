@@ -7,8 +7,11 @@ on:
     branches: [master]
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1 — Schema unit tests (no model artifacts required, runs in ~10s)
+  # ---------------------------------------------------------------------------
   test:
-    name: Schema & unit tests (no artifacts required)
+    name: Schema & unit tests
     runs-on: ubuntu-latest
 
     steps:
@@ -28,13 +31,17 @@ jobs:
           pip install \
             "fastapi>=0.109" \
             "pydantic>=2.5" \
+            "pydantic-settings>=2.2" \
             "pytest>=8.0" \
             "httpx>=0.27"
 
       - name: Run schema unit tests
-        run: pytest tests/test_schemas.py -v --tb=short
+        run: pytest tests/test_schemas.py tests/test_config.py -v --tb=short
 
-  lint:
+  # ---------------------------------------------------------------------------
+  # Job 2 — Import sanity check (catches broken imports without running tests)
+  # ---------------------------------------------------------------------------
+  imports:
     name: Import sanity check
     runs-on: ubuntu-latest
 
@@ -50,10 +57,39 @@ jobs:
       - name: Install CI dependencies
         run: |
           pip install --upgrade pip
-          pip install "fastapi>=0.109" "pydantic>=2.5" "numpy>=1.24"
+          pip install \
+            "fastapi>=0.109" \
+            "pydantic>=2.5" \
+            "pydantic-settings>=2.2" \
+            "numpy>=1.24"
 
       - name: Verify schemas import cleanly
         run: python -c "from src.api.schemas import *; print('schemas OK')"
 
+      - name: Verify config imports cleanly
+        run: python -c "from src.config import settings; print('config OK:', settings.api_version)"
+
       - name: Verify routes import cleanly
         run: python -c "from src.api.routes import router; print('routes OK')"
+
+  # ---------------------------------------------------------------------------
+  # Job 3 — Ruff linting
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Ruff linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ruff
+        run: pip install "ruff>=0.4"
+
+      - name: Run ruff
+        run: ruff check src/ tests/ scripts/

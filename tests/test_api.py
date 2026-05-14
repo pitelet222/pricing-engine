@@ -15,6 +15,28 @@ UNKNOWN_UID = "DOES_NOT_EXIST"
 
 
 # ---------------------------------------------------------------------------
+# GET /health
+# ---------------------------------------------------------------------------
+
+class TestHealth:
+    def test_status_ok(self, client):
+        assert client.get("/health").status_code == 200
+
+    def test_status_field(self, client):
+        data = client.get("/health").json()
+        assert data["status"] == "ok"
+
+    def test_series_loaded(self, client):
+        data = client.get("/health").json()
+        assert data["series_loaded"] == 86
+
+    def test_version_field_present(self, client):
+        data = client.get("/health").json()
+        assert "version" in data
+        assert isinstance(data["version"], str)
+
+
+# ---------------------------------------------------------------------------
 # GET /series
 # ---------------------------------------------------------------------------
 

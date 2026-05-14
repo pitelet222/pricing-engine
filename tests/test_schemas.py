@@ -16,6 +16,7 @@ from src.api.schemas import (
     ExplainResponse,
     ForecastPoint,
     ForecastResponse,
+    HealthResponse,
     RecommendationResponse,
     SeriesItem,
     SeriesListResponse,
@@ -23,6 +24,24 @@ from src.api.schemas import (
     SimulateRequest,
     SimulateResponse,
 )
+
+# ---------------------------------------------------------------------------
+# HealthResponse
+# ---------------------------------------------------------------------------
+
+class TestHealthResponse:
+    def test_valid(self):
+        h = HealthResponse(status="ok", series_loaded=86, version="0.1.0")
+        assert h.status == "ok"
+        assert h.series_loaded == 86
+
+    def test_invalid_status(self):
+        with pytest.raises(ValidationError):
+            HealthResponse(status="degraded", series_loaded=86, version="0.1.0")
+
+    def test_missing_field(self):
+        with pytest.raises(ValidationError):
+            HealthResponse(status="ok", series_loaded=86)
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
-import pandas as pd, numpy as np
+import pandas as pd
+
 P = 'data/outputs/'
 
 df = pd.read_csv('data/processed/avocado_features.csv', parse_dates=['Date'])

@@ -4,20 +4,28 @@ routes.py — All API endpoint handlers.
 Dependency pattern: get_datastore() reads from request.app.state, which is
 set by the lifespan in main.py. Using Request here avoids a circular import
 between routes.py and main.py.
+
+Response cache
+--------------
+The four read-only endpoints (/series, /forecast, /recommend, /explain) serve
+data that is static between process restarts — it's all pre-computed in the
+notebooks. A module-level dict caches the first computed result per unique_id
+so subsequent calls skip all DataFrame work and return the stored object directly.
+The cache is never invalidated during a process's lifetime; to refresh, restart
+the server (which re-runs the lifespan and reloads the DataStore).
 """
 from __future__ import annotations
 
 import math
-from typing import Annotated
+from typing import Annotated, Any
 
-import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from src.data.loader import DataStore
 from src.api.schemas import (
     ExplainResponse,
     ForecastPoint,
     ForecastResponse,
+    HealthResponse,
     RecommendationResponse,
     SeriesItem,
     SeriesListResponse,
@@ -25,8 +33,13 @@ from src.api.schemas import (
     SimulateRequest,
     SimulateResponse,
 )
+from src.config import settings
+from src.data.loader import DataStore
 
 router = APIRouter()
+
+# Module-level response cache — keyed by "<endpoint>:<unique_id>" or just "<endpoint>".
+_CACHE: dict[str, Any] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -55,12 +68,34 @@ def _require_series(ds: DataStore, unique_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# GET /health
+# ---------------------------------------------------------------------------
+
+@router.get("/health", response_model=HealthResponse, tags=["meta"])
+def health(ds: DataStoreDep) -> HealthResponse:
+    """
+    Liveness / readiness check.
+
+    Returns HTTP 200 with a JSON body as long as the DataStore loaded
+    successfully. Suitable for Docker and Kubernetes health probes.
+    """
+    return HealthResponse(
+        status="ok",
+        series_loaded=len(ds.series_meta),
+        version=settings.api_version,
+    )
+
+
+# ---------------------------------------------------------------------------
 # GET /series
 # ---------------------------------------------------------------------------
 
 @router.get("/series", response_model=SeriesListResponse)
 def list_series(ds: DataStoreDep) -> SeriesListResponse:
     """List all 86 avocado market series with region and type metadata."""
+    if "series" in _CACHE:
+        return _CACHE["series"]
+
     items = [
         SeriesItem(
             unique_id=uid,
@@ -69,7 +104,9 @@ def list_series(ds: DataStoreDep) -> SeriesListResponse:
         )
         for uid, meta in ds.series_meta.items()
     ]
-    return SeriesListResponse(total=len(items), series=items)
+    result = SeriesListResponse(total=len(items), series=items)
+    _CACHE["series"] = result
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -81,11 +118,15 @@ def get_forecast(unique_id: str, ds: DataStoreDep) -> ForecastResponse:
     """
     Return the 12-week price forecast for one series.
 
-    Includes point forecasts from all 8 models (7 ensemble components +
-    SeasonalNaive baseline) and Ensemble_weighted conformal PI (80 % coverage).
+    Includes point forecasts from all ensemble components and the
+    Ensemble_weighted conformal PI (90% nominal coverage).
     PI bounds are series-level constants derived from the CV residual distribution.
     """
     _require_series(ds, unique_id)
+
+    cache_key = f"forecast:{unique_id}"
+    if cache_key in _CACHE:
+        return _CACHE[cache_key]
 
     series_forecast = ds.forecast_df[ds.forecast_df["unique_id"] == unique_id].copy()
     pi_row = ds.pi_df[ds.pi_df["unique_id"] == unique_id].iloc[0]
@@ -108,7 +149,9 @@ def get_forecast(unique_id: str, ds: DataStoreDep) -> ForecastResponse:
         )
         for _, row in series_forecast.iterrows()
     ]
-    return ForecastResponse(unique_id=unique_id, points=points)
+    result = ForecastResponse(unique_id=unique_id, points=points)
+    _CACHE[cache_key] = result
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -120,16 +163,20 @@ def get_recommendation(unique_id: str, ds: DataStoreDep) -> RecommendationRespon
     """
     Return the revenue-maximising price recommendation for one series.
 
-    Optimal price and revenue uplift are computed via grid search (±30 % bounds)
+    Optimal price and revenue uplift are computed via grid search (±30% bounds)
     using the LightGBM demand model trained in notebook 04.
     """
     _require_series(ds, unique_id)
+
+    cache_key = f"recommend:{unique_id}"
+    if cache_key in _CACHE:
+        return _CACHE[cache_key]
 
     row = ds.recommendations_df[
         ds.recommendations_df["unique_id"] == unique_id
     ].iloc[0]
 
-    return RecommendationResponse(
+    result = RecommendationResponse(
         unique_id=unique_id,
         is_organic=bool(row["is_organic"]),
         current_price=row["current_price"],
@@ -140,6 +187,8 @@ def get_recommendation(unique_id: str, ds: DataStoreDep) -> RecommendationRespon
         revenue_change_pct=row["revenue_change_pct"],
         elasticity=row["elasticity"],
     )
+    _CACHE[cache_key] = result
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +205,10 @@ def get_explanation(unique_id: str, ds: DataStoreDep) -> ExplainResponse:
     """
     _require_series(ds, unique_id)
 
+    cache_key = f"explain:{unique_id}"
+    if cache_key in _CACHE:
+        return _CACHE[cache_key]
+
     series_shap = ds.shap_drivers_df[
         ds.shap_drivers_df["unique_id"] == unique_id
     ].sort_values("driver_rank")
@@ -171,7 +224,9 @@ def get_explanation(unique_id: str, ds: DataStoreDep) -> ExplainResponse:
         )
         for _, row in series_shap.iterrows()
     ]
-    return ExplainResponse(unique_id=unique_id, drivers=drivers)
+    result = ExplainResponse(unique_id=unique_id, drivers=drivers)
+    _CACHE[cache_key] = result
+    return result
 
 
 # ---------------------------------------------------------------------------

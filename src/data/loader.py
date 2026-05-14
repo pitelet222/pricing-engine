@@ -19,13 +19,13 @@ from dataclasses import dataclass
 import joblib
 import pandas as pd
 
+from src.config import settings
+
 # ---------------------------------------------------------------------------
-# Filesystem roots — resolved relative to this file so the API works from any
-# working directory.
+# Filesystem roots — resolved from Settings so Docker/env can override them.
 # ---------------------------------------------------------------------------
-_ROOT = pathlib.Path(__file__).resolve().parents[2]   # pricing-engine/
-_OUTPUTS = _ROOT / "data" / "outputs"
-_PROCESSED = _ROOT / "data" / "processed"
+_OUTPUTS = settings.outputs_dir
+_PROCESSED = settings.processed_dir
 
 
 # ---------------------------------------------------------------------------

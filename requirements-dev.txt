@@ -1,0 +1,9 @@
+# Development and CI dependencies — not required for the API or dashboard at runtime.
+# Install with: pip install -r requirements-dev.txt
+
+# ---------- Testing ----------
+pytest>=8.0
+httpx>=0.27          # TestClient transport for FastAPI integration tests
+
+# ---------- Linting ----------
+ruff>=0.4            # Fast Python linter (replaces flake8, isort, pyupgrade)
