@@ -53,6 +53,8 @@ def forecast_chart(
     ))
 
     for model, color in _MODEL_COLORS.items():
+        if model not in series_df.columns:
+            continue
         fig.add_trace(go.Scatter(
             x=series_df["ds"],
             y=series_df[model],
