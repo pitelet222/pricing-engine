@@ -33,22 +33,26 @@ class SeriesListResponse(BaseModel):
 
 class ForecastPoint(BaseModel):
     ds: date
-    auto_ets: float = Field(description="AutoETS point forecast (USD)")
-    auto_ets_lower: float = Field(
-        description="AutoETS + conformal lower quantile (80 % PI)"
+    ensemble_weighted: float = Field(description="Ensemble (inverse-MAE weighted) point forecast (USD)")
+    ensemble_lower: float = Field(
+        description="Ensemble_weighted + conformal lower quantile (80 % PI)"
     )
-    auto_ets_upper: float = Field(
-        description="AutoETS + conformal upper quantile (80 % PI)"
+    ensemble_upper: float = Field(
+        description="Ensemble_weighted + conformal upper quantile (80 % PI)"
     )
-    nhits: float
-    auto_arima: float
-    seasonal_naive: float
+    mstl_ets: float = Field(description="MSTL + AutoETS component model forecast")
+    mstl_arima: float = Field(description="MSTL + AutoARIMA component model forecast")
+    mstl_theta: float = Field(description="MSTL + AutoTheta component model forecast")
+    nhits: float = Field(description="NHITS neural forecast")
+    nbeatsx: float = Field(description="NBEATSx neural forecast")
+    dlinear: float = Field(description="DLinear neural forecast")
+    seasonal_naive: float = Field(description="SeasonalNaive baseline forecast")
 
 
 class ForecastResponse(BaseModel):
     unique_id: str
     pi_coverage: float = Field(
-        default=0.80,
+        default=0.90,
         description="Nominal conformal prediction-interval coverage",
     )
     points: list[ForecastPoint]
