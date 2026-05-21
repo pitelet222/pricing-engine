@@ -31,6 +31,9 @@ import sys
 import time
 
 _ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_ROOT))
+
+from src.data.manifest import write_manifest  # noqa: E402 — must come after sys.path insert
 
 _NOTEBOOKS = [
     "notebooks/01_eda.ipynb",
@@ -86,9 +89,16 @@ def main() -> None:
         _run(nb)
 
     total = time.perf_counter() - t_start
+
+    manifest_path = write_manifest(
+        _ROOT / "data" / "outputs",
+        _ROOT / "data" / "processed",
+    )
+
     print(_BAR)
     print(f"  All notebooks completed in {total:.0f}s.")
     print("  Artifacts written to data/outputs/ and data/processed/")
+    print(f"  Manifest written to {manifest_path.relative_to(_ROOT)}")
     print(_BAR)
 
 

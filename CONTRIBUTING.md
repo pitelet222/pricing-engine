@@ -47,6 +47,26 @@ pip install -r requirements-dev.txt
 
 ---
 
+## Make Targets
+
+A `Makefile` is provided for common developer tasks.
+On Windows without GNU make, every target has a Python equivalent via `scripts/bootstrap.py`.
+
+| Target | What it does | macOS / Linux | Windows |
+|--------|--------------|---------------|---------|
+| `setup` | Install dev deps | `make setup` | `python scripts/bootstrap.py setup` |
+| `setup-full` | Install full ML stack | `make setup-full` | `python scripts/bootstrap.py setup-full` |
+| `test` | Unit tests (no artefacts) | `make test` | `python scripts/bootstrap.py test` |
+| `test-integration` | Toy-DataStore integration tests | `make test-integration` | `python scripts/bootstrap.py test-integration` |
+| `test-all` | Every test file | `make test-all` | `python scripts/bootstrap.py test-all` |
+| `lint` | Ruff check | `make lint` | `python scripts/bootstrap.py lint` |
+| `api` | Start FastAPI server | `make api` | `python scripts/bootstrap.py api` |
+| `dashboard` | Start Streamlit dashboard | `make dashboard` | `python scripts/bootstrap.py dashboard` |
+| `notebooks` | Run notebooks 01–06 | `make notebooks` | `python scripts/bootstrap.py notebooks` |
+| `clean` | Delete caches / coverage | `make clean` | `python scripts/bootstrap.py clean` |
+
+---
+
 ## Generating Model Artifacts
 
 The API and dashboard both depend on pre-computed artifacts in `data/outputs/`
@@ -81,36 +101,71 @@ python scripts/run_pipeline.py
 
 ## Running Tests
 
-### Unit tests — always runnable, no artifacts needed
+### Unit tests — always runnable, no artefacts needed
 
 ```bash
-pytest tests/ -m "not integration" -v
+make test
+# or: pytest tests/ -m "not integration" -v
 ```
 
-This covers:
-- `test_schemas.py` — Pydantic model constraints
-- `test_config.py` — Settings, auth, JSON formatter
-- `test_rate_limit.py` — Sliding-window rate limiter
-- `test_charts.py` — Plotly chart builders
-- `test_loader_unit.py` — DataStore helpers (`_require`, `_build_series_meta`)
+This covers 13 test files (252 tests):
 
-### Full test suite — requires model artifacts
+| File | What it tests |
+|------|--------------|
+| `test_schemas.py` | Pydantic model constraints and field validation |
+| `test_config.py` | Settings, auth dependency, JSON log formatter |
+| `test_rate_limit.py` | Sliding-window rate limiter (eviction, headers) |
+| `test_charts.py` | All four Plotly chart builders |
+| `test_loader_unit.py` | DataStore helpers (`_require`, `_build_series_meta`) |
+| `test_preprocessing.py` | Raw data loading and schema normalisation |
+| `test_features.py` | Full feature engineering pipeline (temporal, volume, lag, region) |
+| `test_metrics.py` | Forecast metrics (MAE, RMSE, MAPE, SMAPE) |
+| `test_forecaster.py` | Nixtla DataFrame builders and ensemble weight computation |
+| `test_pricer.py` | Revenue curve, price optimisation, price elasticity |
+| `test_uncertainty.py` | Conformal PI stats and quantile pricing strategies |
+| `test_explainability.py` | SHAP driver extraction and narrative generation |
+| `test_manifest.py` | Artifact checksum manifest (write, verify, stale detection) |
+
+### Toy-DataStore integration tests — no artefacts, requires lightgbm
+
+```bash
+make test-integration
+# or: pytest tests/test_integration.py -v
+```
+
+`test_integration.py` (28 tests) builds all eight DataStore artefacts from scratch
+at session start using a fast 30-round LightGBM on synthetic 4-series data, then
+boots the full FastAPI application and exercises every endpoint end-to-end.
+
+Requirements: `lightgbm>=4.1` and `scikit-learn>=1.3` (included in `requirements.txt`).
+The file auto-skips via `pytest.importorskip` when those packages are absent, so
+running `make test` on a minimal dev install is never blocked.
+
+### Full test suite — requires model artefacts from the notebooks
 
 ```bash
 # Run notebooks 01–06 first, then:
-pytest tests/ -v
+make test-all
+# or: pytest tests/ -v
 ```
 
-Integration tests (`@pytest.mark.integration`) load the DataStore via the real
-lifespan and hit all API endpoints end-to-end.
+Tests marked `@pytest.mark.integration` load the real DataStore via the lifespan
+and hit all API endpoints with production artefacts. They are skipped automatically
+when `data/outputs/` does not exist.
 
 ### Coverage report
 
 ```bash
 pytest tests/ -m "not integration" \
-  --cov=src/api/schemas --cov=src/config --cov=src/api/auth \
-  --cov=src/api/metrics --cov=src/api/logging --cov=src/api/rate_limit \
+  --cov=src/api/schemas  --cov=src/config \
+  --cov=src/api/auth     --cov=src/api/metrics \
+  --cov=src/api/logging  --cov=src/api/rate_limit \
+  --cov=src/data/preprocessing  --cov=src/data/features \
+  --cov=src/evaluation/metrics  --cov=src/models/forecaster \
+  --cov=src/models/pricer       --cov=src/models/uncertainty \
+  --cov=src/evaluation/explainability \
   --cov=src/dashboard/charts \
+  --cov=src/data/manifest \
   --cov-report=term-missing
 ```
 
@@ -156,8 +211,16 @@ uvicorn src.api.main:app --reload
 To enable API key authentication:
 
 ```bash
+# Single key (simple deployments)
 PRICING_API_KEY=your-secret uvicorn src.api.main:app --reload
-# Then pass the key in every request:
+
+# Multiple keys — old key stays valid while clients migrate to the new one
+PRICING_API_KEYS=new-secret,old-secret uvicorn src.api.main:app --reload
+```
+
+Pass the active key in every request:
+
+```bash
 curl -H "X-API-Key: your-secret" http://localhost:8000/series
 ```
 
@@ -215,15 +278,24 @@ docker-compose up --build
 2. Make your changes and add tests
 3. Run unit tests and linting:
    ```bash
-   pytest tests/ -m "not integration" -v
-   ruff check src/ tests/ scripts/
+   make test    # or: pytest tests/ -m "not integration" -v
+   make lint    # or: ruff check src/ tests/ scripts/
    ```
-4. Regenerate the OpenAPI spec if you changed any schema:
+4. If you added a new src module, add a matching test file and include it in both
+   `make test` (the explicit file list in `Makefile` and `scripts/bootstrap.py`)
+   and the coverage `--cov=` list in `.github/workflows/ci.yml` (Job 1).
+5. Regenerate the OpenAPI spec if you changed any schema:
    ```bash
    python scripts/export_openapi.py
    ```
-5. Open a pull request against `master`
+6. Open a pull request against `master`
 
-CI runs automatically on every push and PR. The following must all be green
-before merging: unit tests + coverage gate (≥ 90%), import sanity checks,
-ruff linting, and OpenAPI spec freshness.
+CI runs automatically on every push and PR. All five jobs must be green before merging:
+
+| Job | What it checks |
+|-----|---------------|
+| **Unit tests** | 252 unit tests + ≥ 90% coverage on 15 src modules |
+| **Import sanity** | All key modules import without error in a minimal environment |
+| **Ruff linting** | Zero lint errors across `src/`, `tests/`, `scripts/` |
+| **OpenAPI spec** | `docs/openapi.json` matches what `export_openapi.py` generates today |
+| **Integration tests** | 28 toy-DataStore endpoint tests pass with lightgbm installed |

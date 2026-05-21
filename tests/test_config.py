@@ -95,6 +95,68 @@ class TestApiKeyAuth:
 
 
 # ---------------------------------------------------------------------------
+# Multi-key rotation support (TIER 3.1)
+# ---------------------------------------------------------------------------
+
+class TestApiKeyRotation:
+    def test_valid_keys_empty_by_default(self):
+        from src.config import Settings
+        assert Settings().valid_keys == frozenset()
+
+    def test_valid_keys_from_single_api_key(self):
+        from src.config import Settings
+        assert Settings(api_key="secret1").valid_keys == frozenset({"secret1"})
+
+    def test_valid_keys_from_api_keys_csv(self):
+        from src.config import Settings
+        assert Settings(api_keys="key1,key2,key3").valid_keys == frozenset({"key1", "key2", "key3"})
+
+    def test_valid_keys_strips_whitespace(self):
+        from src.config import Settings
+        assert Settings(api_keys="key1 , key2").valid_keys == frozenset({"key1", "key2"})
+
+    def test_valid_keys_skips_empty_entries(self):
+        from src.config import Settings
+        assert Settings(api_keys="key1,,key2").valid_keys == frozenset({"key1", "key2"})
+
+    def test_valid_keys_is_union_of_both_fields(self):
+        from src.config import Settings
+        s = Settings(api_key="primary", api_keys="secondary,tertiary")
+        assert s.valid_keys == frozenset({"primary", "secondary", "tertiary"})
+
+    def test_api_keys_env_override(self, monkeypatch):
+        monkeypatch.setenv("PRICING_API_KEYS", "a,b,c")
+        from src.config import Settings
+        assert Settings().valid_keys == frozenset({"a", "b", "c"})
+
+    def test_verify_passes_for_any_key_in_set(self, monkeypatch):
+        import src.api.auth as auth_module
+        from src.config import Settings
+        patched = Settings(api_keys="key1,key2")
+        monkeypatch.setattr(auth_module, "settings", patched)
+        asyncio.run(auth_module.verify_api_key(x_api_key="key1"))
+        asyncio.run(auth_module.verify_api_key(x_api_key="key2"))
+
+    def test_verify_rejects_unknown_key_when_multi_key_configured(self, monkeypatch):
+        import src.api.auth as auth_module
+        from src.config import Settings
+        patched = Settings(api_keys="key1,key2")
+        monkeypatch.setattr(auth_module, "settings", patched)
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(auth_module.verify_api_key(x_api_key="unknown"))
+        assert exc_info.value.status_code == 401
+
+    def test_verify_rejects_none_when_multi_key_configured(self, monkeypatch):
+        import src.api.auth as auth_module
+        from src.config import Settings
+        patched = Settings(api_keys="key1,key2")
+        monkeypatch.setattr(auth_module, "settings", patched)
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(auth_module.verify_api_key(x_api_key=None))
+        assert exc_info.value.status_code == 401
+
+
+# ---------------------------------------------------------------------------
 # Metrics module import (ensures coverage gate sees src/api/metrics.py)
 # ---------------------------------------------------------------------------
 

@@ -71,6 +71,7 @@ def _test() -> None:
         "tests/test_explainability.py",
         "tests/test_charts.py",
         "tests/test_loader_unit.py",
+        "tests/test_manifest.py",
         "-m", "not integration",
         "-v",
     )

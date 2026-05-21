@@ -39,6 +39,7 @@ test: ## Run all CI-safe unit tests (no model artefacts required)
 		tests/test_preprocessing.py tests/test_features.py tests/test_metrics.py \
 		tests/test_forecaster.py tests/test_pricer.py tests/test_uncertainty.py \
 		tests/test_explainability.py tests/test_charts.py tests/test_loader_unit.py \
+		tests/test_manifest.py \
 		-m "not integration" -v
 
 test-integration: ## Run toy-DataStore integration tests (requires lightgbm + scikit-learn)

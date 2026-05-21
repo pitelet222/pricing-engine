@@ -54,9 +54,27 @@ class Settings(BaseSettings):
     )
 
     # --------------------------------------------------------------- security
-    # Empty string = auth disabled (development / test default).
-    # Set PRICING_API_KEY=<secret> in production to enable X-API-Key checks.
+    # Auth is disabled when both fields are empty (local dev / test default).
+    #
+    # Single-key mode:
+    #   PRICING_API_KEY=your-secret
+    #
+    # Multi-key rotation (old key stays valid while clients migrate):
+    #   PRICING_API_KEYS=new-secret,old-secret
+    #
+    # Setting both produces the union — all listed keys are accepted.
     api_key: str = ""
+    api_keys: str = ""  # comma-separated; merged with api_key in valid_keys
+
+    @property
+    def valid_keys(self) -> frozenset[str]:
+        """All accepted API keys. Empty frozenset means auth is disabled."""
+        keys: set[str] = set()
+        if self.api_key:
+            keys.add(self.api_key)
+        if self.api_keys:
+            keys.update(k.strip() for k in self.api_keys.split(",") if k.strip())
+        return frozenset(keys)
 
     # -------------------------------------------------------------- observability
     log_level: str = "INFO"

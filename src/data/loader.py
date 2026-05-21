@@ -21,6 +21,7 @@ import joblib
 import pandas as pd
 
 from src.config import settings
+from src.data.manifest import check_manifest
 
 _log = logging.getLogger(__name__)
 
@@ -185,6 +186,7 @@ def _validate(ds: DataStore) -> None:
     3. Conformal PI lower_q < upper_q for every series.
     4. SHAP driver ranks 1, 2, 3 present for every series.
     5. LightGBM model smoke test: predict one row, verify positive output.
+    6. Artifact checksums: compare on-disk files against manifest.json (if present).
     """
     issues = 0
 
@@ -236,6 +238,11 @@ def _validate(ds: DataStore) -> None:
             raise ValueError(f"unexpected prediction: {pred}")
     except Exception as exc:
         _log.warning("validation: model smoke test failed — %s", exc)
+        issues += 1
+
+    # 6. Artifact checksum verification
+    for issue in check_manifest(_OUTPUTS, _PROCESSED):
+        _log.warning("validation: %s", issue)
         issues += 1
 
     if issues == 0:
