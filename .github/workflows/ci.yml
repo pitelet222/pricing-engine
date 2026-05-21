@@ -8,17 +8,15 @@ on:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Job 1 — Schema & config unit tests with coverage gate
+  # Job 1 — Unit tests with coverage gate
   #
-  # Covers the six modules that can be fully tested without model artifacts:
-  #   src/api/schemas.py  src/config.py  src/api/auth.py  src/api/metrics.py
-  #   src/api/logging.py  src/api/rate_limit.py
-  #
-  # Coverage threshold is set on those modules only so the gate is meaningful
-  # rather than trivially low due to uncoverable artifact-gated code.
+  # Covers all source modules that can be fully tested without model artefacts.
+  # Functions that require lightgbm / shap / statsforecast at runtime are
+  # excluded via `# pragma: no cover` on their def lines so the gate stays
+  # meaningful (≥90% on testable code).
   # ---------------------------------------------------------------------------
   test:
-    name: Schema & unit tests (+ coverage)
+    name: Unit tests (+ coverage)
     runs-on: ubuntu-latest
 
     steps:
@@ -38,19 +36,36 @@ jobs:
             "pydantic>=2.5" \
             "pydantic-settings>=2.2" \
             "prometheus-client>=0.20" \
+            "numpy>=1.24" \
+            "pandas>=2.0" \
+            "scipy>=1.11" \
+            "plotly>=5.18" \
+            "joblib>=1.3" \
             "pytest>=8.0" \
             "pytest-cov>=5.0" \
             "httpx>=0.27"
 
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         run: |
-          pytest tests/test_schemas.py tests/test_config.py tests/test_rate_limit.py \
+          pytest \
+            tests/test_schemas.py tests/test_config.py tests/test_rate_limit.py \
+            tests/test_preprocessing.py tests/test_features.py tests/test_metrics.py \
+            tests/test_forecaster.py tests/test_pricer.py tests/test_uncertainty.py \
+            tests/test_explainability.py tests/test_charts.py tests/test_loader_unit.py \
             --cov=src/api/schemas \
             --cov=src/config \
             --cov=src/api/auth \
             --cov=src/api/metrics \
             --cov=src/api/logging \
             --cov=src/api/rate_limit \
+            --cov=src/data/preprocessing \
+            --cov=src/data/features \
+            --cov=src/evaluation/metrics \
+            --cov=src/models/forecaster \
+            --cov=src/models/pricer \
+            --cov=src/models/uncertainty \
+            --cov=src/evaluation/explainability \
+            --cov=src/dashboard/charts \
             --cov-report=term-missing \
             --cov-fail-under=90 \
             -v --tb=short
@@ -104,6 +119,15 @@ jobs:
       - name: Verify rate_limit imports cleanly
         run: python -c "from src.api.rate_limit import check_rate_limit; print('rate_limit OK')"
 
+      - name: Verify preprocessing imports cleanly
+        run: python -c "from src.data.preprocessing import clean_data; print('preprocessing OK')"
+
+      - name: Verify features imports cleanly
+        run: python -c "from src.data.features import build_features; print('features OK')"
+
+      - name: Verify evaluation.metrics imports cleanly
+        run: python -c "from src.evaluation.metrics import compute_metrics; print('eval.metrics OK')"
+
   # ---------------------------------------------------------------------------
   # Job 3 — Ruff linting
   # ---------------------------------------------------------------------------
@@ -156,3 +180,43 @@ jobs:
 
       - name: Verify spec is committed and current
         run: git diff --exit-code docs/openapi.json
+
+  # ---------------------------------------------------------------------------
+  # Job 5 — Integration tests with toy DataStore
+  #
+  # Builds all 8 DataStore artefacts from scratch using a fast 30-round
+  # LightGBM model on 4-series synthetic data.  Exercises every API endpoint
+  # without requiring any pre-generated notebook outputs.
+  # ---------------------------------------------------------------------------
+  integration:
+    name: Integration tests (toy DataStore)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install integration test dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            "fastapi>=0.109" \
+            "pydantic>=2.5" \
+            "pydantic-settings>=2.2" \
+            "prometheus-client>=0.20" \
+            "numpy>=1.24" \
+            "pandas>=2.0" \
+            "scipy>=1.11" \
+            "scikit-learn>=1.3" \
+            "lightgbm>=4.1" \
+            "joblib>=1.3" \
+            "pytest>=8.0" \
+            "httpx>=0.27"
+
+      - name: Run integration tests
+        run: pytest tests/test_integration.py -v --tb=short
