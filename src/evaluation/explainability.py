@@ -30,6 +30,8 @@ generate_pricing_narrative : Plain-English markdown explanation per series.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -38,13 +40,13 @@ SEED: int = 42
 
 
 def compute_shap_global(  # pragma: no cover
-    model,
+    model: Any,
     X_all: pd.DataFrame,
     meta_df: pd.DataFrame,
     feature_cols: list[str],
     n_sample: int = SHAP_GLOBAL_SAMPLE,
     seed: int = SEED,
-):
+) -> tuple[Any, pd.DataFrame]:
     """
     Compute global SHAP values on a stratified sample of historical rows.
 
@@ -90,9 +92,9 @@ def compute_shap_global(  # pragma: no cover
 
 
 def compute_shap_latest(  # pragma: no cover
-    model,
+    model: Any,
     X_latest: pd.DataFrame,
-):
+) -> Any:
     """
     Compute SHAP values for the latest-context rows (one per series).
 
@@ -115,7 +117,7 @@ def compute_shap_latest(  # pragma: no cover
 
 
 def build_top_drivers(
-    shap_latest,
+    shap_latest: Any,
     latest_ctx: pd.DataFrame,
     feature_cols: list[str],
     n: int = 3,

@@ -225,3 +225,39 @@ jobs:
 
       - name: Run integration tests
         run: pytest tests/test_integration.py -v --tb=short
+
+  # ---------------------------------------------------------------------------
+  # Job 6 — mypy static type checking
+  #
+  # Checks all of src/ for missing type annotations and return-Any leaks using
+  # mypy.ini config (explicit_package_bases, ignore_missing_imports, etc.).
+  # Runs on a minimal install — only the packages needed for import resolution.
+  # ---------------------------------------------------------------------------
+  type-check:
+    name: mypy type checking
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install type-check dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            "fastapi>=0.109" \
+            "pydantic>=2.5" \
+            "pydantic-settings>=2.2" \
+            "prometheus-client>=0.20" \
+            "numpy>=1.24" \
+            "pandas>=2.0" \
+            "starlette>=0.27" \
+            "mypy>=1.8"
+
+      - name: Run mypy
+        run: mypy src/

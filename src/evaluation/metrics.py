@@ -13,9 +13,10 @@ compute_metrics : MAE, RMSE, MAPE, SMAPE for a pair of actual/predicted arrays.
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 
-def compute_metrics(y_true, y_pred) -> dict[str, float]:
+def compute_metrics(y_true: ArrayLike, y_pred: ArrayLike) -> dict[str, float]:
     """
     Compute MAE, RMSE, MAPE, and SMAPE between actual and predicted arrays.
 

@@ -56,6 +56,7 @@ python-dotenv>=1.0
 # ---------- Testing ----------
 pytest>=8.0
 httpx>=0.27                  # async test client for FastAPI
+mypy>=1.8
 
 # ---------- Notebook / dev ----------
 ipykernel>=6.29

@@ -25,6 +25,8 @@ train_demand_model : Train LightGBM with early stopping on a temporal holdout.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
@@ -85,7 +87,7 @@ LGB_PARAMS: dict = {
 
 def compute_elasticity(
     row: pd.Series,
-    model,
+    model: Any,
     feature_cols: list[str] = FEATURE_COLS,
     delta: float = 0.01,
 ) -> float:
@@ -129,7 +131,7 @@ def compute_elasticity(
 def revenue_curve(
     context_row: pd.Series,
     price_grid: np.ndarray,
-    model,
+    model: Any,
     feature_cols: list[str] = FEATURE_COLS,
 ) -> np.ndarray:
     """
@@ -169,7 +171,7 @@ def revenue_curve(
 def optimize_price(
     context_row: pd.Series,
     p_mean: float,
-    model,
+    model: Any,
     feature_cols: list[str] = FEATURE_COLS,
     margin: float = PRICE_MARGIN,
     n_points: int = N_GRID,
@@ -224,7 +226,7 @@ def train_demand_model(  # pragma: no cover
     seed: int = SEED,
     num_boost_round: int = 2000,
     early_stopping_rounds: int = 50,
-):
+) -> Any:
     """
     Train a LightGBM demand model with early stopping on a temporal holdout.
 

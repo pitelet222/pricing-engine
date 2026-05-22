@@ -108,7 +108,7 @@ make test
 # or: pytest tests/ -m "not integration" -v
 ```
 
-This covers 13 test files (252 tests):
+This covers 13 test files (256 tests):
 
 | File | What it tests |
 |------|--------------|
@@ -133,7 +133,7 @@ make test-integration
 # or: pytest tests/test_integration.py -v
 ```
 
-`test_integration.py` (28 tests) builds all eight DataStore artefacts from scratch
+`test_integration.py` (36 tests) builds all eight DataStore artefacts from scratch
 at session start using a fast 30-round LightGBM on synthetic 4-series data, then
 boots the full FastAPI application and exercises every endpoint end-to-end.
 
@@ -180,6 +180,17 @@ ruff check src/ tests/ scripts/
 Ruff is configured in `ruff.toml`. It enforces pycodestyle, pyflakes, isort,
 and pyupgrade rules. The pre-commit hook runs it automatically on every commit.
 
+### Static type checking (mypy)
+
+```bash
+make lint-types
+# or: mypy src/
+```
+
+mypy is configured in `mypy.ini` (`explicit_package_bases`, `ignore_missing_imports`,
+`disallow_untyped_defs`). It checks all of `src/` — third-party types are ignored so
+only project code is validated. All functions must have full type annotations.
+
 ---
 
 ## Pre-commit Hooks
@@ -221,7 +232,7 @@ PRICING_API_KEYS=new-secret,old-secret uvicorn src.api.main:app --reload
 Pass the active key in every request:
 
 ```bash
-curl -H "X-API-Key: your-secret" http://localhost:8000/series
+curl -H "X-API-Key: your-secret" http://localhost:8000/v1/series
 ```
 
 ---
@@ -294,8 +305,9 @@ CI runs automatically on every push and PR. All five jobs must be green before m
 
 | Job | What it checks |
 |-----|---------------|
-| **Unit tests** | 252 unit tests + ≥ 90% coverage on 15 src modules |
+| **Unit tests** | 256 unit tests + ≥ 90% coverage on 15 src modules |
 | **Import sanity** | All key modules import without error in a minimal environment |
 | **Ruff linting** | Zero lint errors across `src/`, `tests/`, `scripts/` |
 | **OpenAPI spec** | `docs/openapi.json` matches what `export_openapi.py` generates today |
-| **Integration tests** | 28 toy-DataStore endpoint tests pass with lightgbm installed |
+| **Integration tests** | 36 toy-DataStore endpoint tests pass with lightgbm installed |
+| **mypy type check** | Zero type errors across all of `src/` (`mypy.ini` config) |

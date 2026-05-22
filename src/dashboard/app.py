@@ -25,7 +25,7 @@ from src.dashboard.charts import (
     revenue_comparison_chart,
     strategy_range_chart,
 )
-from src.data.loader import load_datastore
+from src.data.loader import DataStore, load_datastore
 
 st.set_page_config(
     page_title="Avocado Pricing Engine",
@@ -35,7 +35,7 @@ st.set_page_config(
 
 
 @st.cache_resource(show_spinner="Loading models and data...")
-def get_datastore():
+def get_datastore() -> DataStore:
     return load_datastore()
 
 

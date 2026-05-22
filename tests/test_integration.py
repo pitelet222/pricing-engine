@@ -325,71 +325,80 @@ class TestHealth:
         body = integration_client.get("/health").json()
         assert "version" in body and body["version"]
 
+    def test_manifest_ok_present(self, integration_client):
+        body = integration_client.get("/health").json()
+        assert "manifest_ok" in body
+        assert isinstance(body["manifest_ok"], bool)
+
+    def test_artifacts_generated_at_present(self, integration_client):
+        body = integration_client.get("/health").json()
+        assert "artifacts_generated_at" in body  # value is None when no manifest
+
 
 class TestSeries:
     def test_status_ok(self, integration_client):
-        assert integration_client.get("/series").status_code == 200
+        assert integration_client.get("/v1/series").status_code == 200
 
     def test_total_four(self, integration_client):
-        assert integration_client.get("/series").json()["total"] == 4
+        assert integration_client.get("/v1/series").json()["total"] == 4
 
     def test_all_series_present(self, integration_client):
-        ids = {s["unique_id"] for s in integration_client.get("/series").json()["series"]}
+        ids = {s["unique_id"] for s in integration_client.get("/v1/series").json()["series"]}
         assert ids == _ALL_UIDS
 
     def test_avocado_type_field(self, integration_client):
-        series = integration_client.get("/series").json()["series"]
+        series = integration_client.get("/v1/series").json()["series"]
         for s in series:
             assert s["avocado_type"] in ("organic", "conventional")
 
 
 class TestForecast:
     def test_status_ok(self, integration_client):
-        assert integration_client.get(f"/forecast/{_UID}").status_code == 200
+        assert integration_client.get(f"/v1/forecast/{_UID}").status_code == 200
 
     def test_twelve_points(self, integration_client):
-        body = integration_client.get(f"/forecast/{_UID}").json()
+        body = integration_client.get(f"/v1/forecast/{_UID}").json()
         assert len(body["points"]) == 12
 
     def test_unique_id_echo(self, integration_client):
-        assert integration_client.get(f"/forecast/{_UID}").json()["unique_id"] == _UID
+        assert integration_client.get(f"/v1/forecast/{_UID}").json()["unique_id"] == _UID
 
     def test_pi_ordering(self, integration_client):
-        pt = integration_client.get(f"/forecast/{_UID}").json()["points"][0]
+        pt = integration_client.get(f"/v1/forecast/{_UID}").json()["points"][0]
         assert pt["ensemble_lower"] <= pt["ensemble_weighted"] <= pt["ensemble_upper"]
 
     def test_unknown_series_404(self, integration_client):
-        assert integration_client.get("/forecast/DoesNotExist_organic").status_code == 404
+        assert integration_client.get("/v1/forecast/DoesNotExist_organic").status_code == 404
 
 
 class TestRecommend:
     def test_status_ok(self, integration_client):
-        assert integration_client.get(f"/recommend/{_UID}").status_code == 200
+        assert integration_client.get(f"/v1/recommend/{_UID}").status_code == 200
 
     def test_positive_optimal_price(self, integration_client):
-        body = integration_client.get(f"/recommend/{_UID}").json()
+        body = integration_client.get(f"/v1/recommend/{_UID}").json()
         assert body["optimal_price"] > 0
 
     def test_required_fields(self, integration_client):
-        body = integration_client.get(f"/recommend/{_UID}").json()
+        body = integration_client.get(f"/v1/recommend/{_UID}").json()
         for field in ("current_price", "optimal_price", "revenue_change_pct", "elasticity"):
             assert field in body
 
     def test_unknown_series_404(self, integration_client):
-        assert integration_client.get("/recommend/DoesNotExist_organic").status_code == 404
+        assert integration_client.get("/v1/recommend/DoesNotExist_organic").status_code == 404
 
 
 class TestBatchRecommend:
     def test_status_ok(self, integration_client):
         r = integration_client.post(
-            "/batch-recommend",
+            "/v1/batch-recommend",
             json={"unique_ids": [_UID, "Houston_conventional"]},
         )
         assert r.status_code == 200
 
     def test_found_count(self, integration_client):
         r = integration_client.post(
-            "/batch-recommend",
+            "/v1/batch-recommend",
             json={"unique_ids": [_UID, "Houston_conventional", "Ghost_organic"]},
         )
         body = r.json()
@@ -400,74 +409,74 @@ class TestBatchRecommend:
 
 class TestExplain:
     def test_status_ok(self, integration_client):
-        assert integration_client.get(f"/explain/{_UID}").status_code == 200
+        assert integration_client.get(f"/v1/explain/{_UID}").status_code == 200
 
     def test_three_drivers(self, integration_client):
-        body = integration_client.get(f"/explain/{_UID}").json()
+        body = integration_client.get(f"/v1/explain/{_UID}").json()
         assert len(body["drivers"]) == 3
 
     def test_driver_ranks(self, integration_client):
-        drivers = integration_client.get(f"/explain/{_UID}").json()["drivers"]
+        drivers = integration_client.get(f"/v1/explain/{_UID}").json()["drivers"]
         assert [d["driver_rank"] for d in drivers] == [1, 2, 3]
 
     def test_driver_fields(self, integration_client):
-        driver = integration_client.get(f"/explain/{_UID}").json()["drivers"][0]
+        driver = integration_client.get(f"/v1/explain/{_UID}").json()["drivers"][0]
         for field in ("feature", "shap_value", "abs_shap_value", "direction"):
             assert field in driver
 
     def test_unknown_series_404(self, integration_client):
-        assert integration_client.get("/explain/DoesNotExist_organic").status_code == 404
+        assert integration_client.get("/v1/explain/DoesNotExist_organic").status_code == 404
 
 
 class TestUncertainty:
     def test_status_ok(self, integration_client):
-        assert integration_client.get(f"/uncertainty/{_UID}").status_code == 200
+        assert integration_client.get(f"/v1/uncertainty/{_UID}").status_code == 200
 
     def test_strategies_present(self, integration_client):
-        body = integration_client.get(f"/uncertainty/{_UID}").json()
+        body = integration_client.get(f"/v1/uncertainty/{_UID}").json()
         for strategy in ("conservative", "balanced", "aggressive"):
             assert strategy in body
             assert body[strategy]["opt_price"] > 0
 
     def test_risk_fields_present(self, integration_client):
-        body = integration_client.get(f"/uncertainty/{_UID}").json()
+        body = integration_client.get(f"/v1/uncertainty/{_UID}").json()
         for field in ("downside_risk_pct", "uplift_sharpe", "strategies_agree"):
             assert field in body
 
     def test_pi_ordering(self, integration_client):
-        body = integration_client.get(f"/uncertainty/{_UID}").json()
+        body = integration_client.get(f"/v1/uncertainty/{_UID}").json()
         assert body["rev_p10"] <= body["rev_p50"] <= body["rev_p90"]
 
     def test_unknown_series_404(self, integration_client):
-        assert integration_client.get("/uncertainty/DoesNotExist_organic").status_code == 404
+        assert integration_client.get("/v1/uncertainty/DoesNotExist_organic").status_code == 404
 
 
 class TestSimulate:
     def test_status_ok(self, integration_client):
-        r = integration_client.post("/simulate", json={"unique_id": _UID, "price": 1.50})
+        r = integration_client.post("/v1/simulate", json={"unique_id": _UID, "price": 1.50})
         assert r.status_code == 200
 
     def test_response_fields(self, integration_client):
         body = integration_client.post(
-            "/simulate", json={"unique_id": _UID, "price": 1.50}
+            "/v1/simulate", json={"unique_id": _UID, "price": 1.50}
         ).json()
         for field in ("unique_id", "price", "predicted_volume", "predicted_log_volume"):
             assert field in body
 
     def test_positive_volume(self, integration_client):
         body = integration_client.post(
-            "/simulate", json={"unique_id": _UID, "price": 1.50}
+            "/v1/simulate", json={"unique_id": _UID, "price": 1.50}
         ).json()
         assert body["predicted_volume"] > 0
 
     def test_price_echoed(self, integration_client):
         body = integration_client.post(
-            "/simulate", json={"unique_id": _UID, "price": 2.25}
+            "/v1/simulate", json={"unique_id": _UID, "price": 2.25}
         ).json()
         assert body["price"] == pytest.approx(2.25)
 
     def test_unknown_series_404(self, integration_client):
         r = integration_client.post(
-            "/simulate", json={"unique_id": "DoesNotExist_organic", "price": 1.50}
+            "/v1/simulate", json={"unique_id": "DoesNotExist_organic", "price": 1.50}
         )
         assert r.status_code == 404

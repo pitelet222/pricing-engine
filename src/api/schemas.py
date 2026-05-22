@@ -20,12 +20,27 @@ from pydantic import BaseModel, Field
 
 class HealthResponse(BaseModel):
     status: Literal["ok"]
-    series_loaded: int = Field(description="Number of market series in the loaded DataStore")
     version: str = Field(description="API version string")
+    series_loaded: int = Field(description="Number of market series in the loaded DataStore")
+    manifest_ok: bool = Field(
+        default=True,
+        description="True when all artifact checksums match manifest.json, "
+                    "or when no manifest exists (no manifest = nothing to check)",
+    )
+    artifacts_generated_at: str | None = Field(
+        default=None,
+        description="ISO-8601 timestamp from the artifact manifest (null if manifest not present)",
+    )
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{"status": "ok", "series_loaded": 86, "version": "0.1.0"}]
+            "examples": [{
+                "status": "ok",
+                "version": "0.1.0",
+                "series_loaded": 86,
+                "manifest_ok": True,
+                "artifacts_generated_at": "2024-03-15T10:30:00+00:00",
+            }]
         }
     }
 

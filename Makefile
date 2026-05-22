@@ -11,7 +11,7 @@
 PYTHON := python
 PIP    := $(PYTHON) -m pip
 
-.PHONY: help setup setup-full test test-integration test-all lint api dashboard notebooks clean
+.PHONY: help setup setup-full test test-integration test-all lint lint-types api dashboard notebooks clean
 
 help: ## Show this help message
 	@printf "\n\033[1mAvocado Pricing Engine\033[0m — available targets:\n\n"
@@ -54,6 +54,9 @@ test-all: ## Run every test file, including artefact-gated and integration tests
 
 lint: ## Check code style with ruff
 	$(PYTHON) -m ruff check src/ tests/ scripts/
+
+lint-types: ## Run mypy static type checker on src/
+	$(PYTHON) -m mypy src/
 
 # ---------------------------------------------------------------------------
 # Run

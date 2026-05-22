@@ -47,6 +47,25 @@ class TestHealthResponse:
         with pytest.raises(ValidationError):
             HealthResponse(status="ok", series_loaded=86)
 
+    def test_manifest_ok_defaults_true(self):
+        h = HealthResponse(status="ok", series_loaded=86, version="0.1.0")
+        assert h.manifest_ok is True
+
+    def test_manifest_ok_can_be_false(self):
+        h = HealthResponse(status="ok", series_loaded=86, version="0.1.0", manifest_ok=False)
+        assert h.manifest_ok is False
+
+    def test_artifacts_generated_at_defaults_none(self):
+        h = HealthResponse(status="ok", series_loaded=86, version="0.1.0")
+        assert h.artifacts_generated_at is None
+
+    def test_artifacts_generated_at_accepts_timestamp(self):
+        h = HealthResponse(
+            status="ok", series_loaded=86, version="0.1.0",
+            artifacts_generated_at="2024-03-15T10:30:00+00:00",
+        )
+        assert h.artifacts_generated_at == "2024-03-15T10:30:00+00:00"
+
 
 # ---------------------------------------------------------------------------
 # SeriesItem / SeriesListResponse

@@ -16,6 +16,7 @@ Targets:
     test-integration Run toy-DataStore integration tests (requires lightgbm)
     test-all         Run every test file
     lint             Check code style with ruff
+    lint-types       Run mypy static type checker on src/
     api              Start the FastAPI server with hot-reload
     dashboard        Start the Streamlit dashboard
     notebooks        Execute notebooks 01–06 in order
@@ -89,6 +90,10 @@ def _lint() -> None:
     _run(_PY, "-m", "ruff", "check", "src/", "tests/", "scripts/")
 
 
+def _lint_types() -> None:
+    _run(_PY, "-m", "mypy", "src/")
+
+
 def _api() -> None:
     _run(_PY, "-m", "uvicorn", "src.api.main:app", "--reload")
 
@@ -137,6 +142,7 @@ _TARGETS: dict[str, tuple[object, str]] = {
     "test-integration": (_test_integration, "Run toy-DataStore integration tests"),
     "test-all":         (_test_all,         "Run all tests"),
     "lint":             (_lint,             "Lint with ruff"),
+    "lint-types":       (_lint_types,       "Type-check src/ with mypy"),
     "api":              (_api,              "Start FastAPI server (http://localhost:8000)"),
     "dashboard":        (_dashboard,        "Start Streamlit dashboard (http://localhost:8501)"),
     "notebooks":        (_notebooks,        "Execute notebooks 01–06 (30–60 min)"),

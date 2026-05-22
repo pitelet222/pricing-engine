@@ -12,26 +12,8 @@
           "meta"
         ],
         "summary": "Health",
-        "description": "Liveness / readiness check.\n\nReturns HTTP 200 with a JSON body as long as the DataStore loaded\nsuccessfully. Suitable for Docker and Kubernetes health probes.",
+        "description": "Liveness / readiness check. Always public \u2014 no API key required.\n\nReturns HTTP 200 as long as the DataStore loaded successfully.\n`manifest_ok` and `artifacts_generated_at` reflect the artifact state\nrecorded at startup; they do not re-read the filesystem on each call.\nSuitable for Docker and Kubernetes health probes.",
         "operationId": "health_health_get",
-        "parameters": [
-          {
-            "name": "x-api-key",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Api-Key"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -42,25 +24,15 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/series": {
+    "/v1/series": {
       "get": {
         "summary": "List Series",
         "description": "List avocado market series with region and type metadata.\n\nSupports optional pagination via `limit` and `offset`. The `total` field\nalways reflects the full 86-series count regardless of page parameters.",
-        "operationId": "list_series_series_get",
+        "operationId": "list_series_v1_series_get",
         "parameters": [
           {
             "name": "limit",
@@ -130,11 +102,11 @@
         }
       }
     },
-    "/forecast/{unique_id}": {
+    "/v1/forecast/{unique_id}": {
       "get": {
         "summary": "Get Forecast",
         "description": "Return the 12-week price forecast for one series.\n\nIncludes point forecasts from all ensemble components and the\nEnsemble_weighted conformal PI (90% nominal coverage).\nPI bounds are series-level constants derived from the CV residual distribution.",
-        "operationId": "get_forecast_forecast__unique_id__get",
+        "operationId": "get_forecast_v1_forecast__unique_id__get",
         "parameters": [
           {
             "name": "unique_id",
@@ -186,11 +158,11 @@
         }
       }
     },
-    "/recommend/{unique_id}": {
+    "/v1/recommend/{unique_id}": {
       "get": {
         "summary": "Get Recommendation",
         "description": "Return the revenue-maximising price recommendation for one series.\n\nOptimal price and revenue uplift are computed via grid search (\u00b130% bounds)\nusing the LightGBM demand model trained in notebook 04.",
-        "operationId": "get_recommendation_recommend__unique_id__get",
+        "operationId": "get_recommendation_v1_recommend__unique_id__get",
         "parameters": [
           {
             "name": "unique_id",
@@ -242,11 +214,11 @@
         }
       }
     },
-    "/batch-recommend": {
+    "/v1/batch-recommend": {
       "post": {
         "summary": "Batch Recommend",
         "description": "Retrieve revenue-maximising price recommendations for multiple series in one call.\n\nUnknown unique_ids are collected in not_found rather than raising a 404 \u2014\nthe caller receives recommendations for all valid IDs and a list of which\nIDs were unrecognised. This is more useful than an all-or-nothing failure\nwhen querying a large portfolio.\n\nAll results are served from the same in-process cache as GET /recommend/{id},\nso repeated batch calls for the same series cost nothing after the first.",
-        "operationId": "batch_recommend_batch_recommend_post",
+        "operationId": "batch_recommend_v1_batch_recommend_post",
         "parameters": [
           {
             "name": "x-api-key",
@@ -299,11 +271,11 @@
         }
       }
     },
-    "/explain/{unique_id}": {
+    "/v1/explain/{unique_id}": {
       "get": {
         "summary": "Get Explanation",
         "description": "Return the top-3 SHAP demand drivers for one series.\n\nSHAP values are computed on a 3 000-row stratified sample in notebook 06.\nEach driver shows feature name, value, SHAP magnitude, and demand direction.",
-        "operationId": "get_explanation_explain__unique_id__get",
+        "operationId": "get_explanation_v1_explain__unique_id__get",
         "parameters": [
           {
             "name": "unique_id",
@@ -355,11 +327,11 @@
         }
       }
     },
-    "/uncertainty/{unique_id}": {
+    "/v1/uncertainty/{unique_id}": {
       "get": {
         "summary": "Get Uncertainty",
         "description": "Return the three-strategy uncertainty analysis for one series.\n\nConservative, balanced, and aggressive strategies each offer a different\nrisk/return trade-off. Risk metrics (downside_risk_pct, uplift_sharpe,\nstrategies_agree) help calibrate how reliable the recommendations are.\nAll values are derived from the conformal prediction intervals computed\nin notebook 05.",
-        "operationId": "get_uncertainty_uncertainty__unique_id__get",
+        "operationId": "get_uncertainty_v1_uncertainty__unique_id__get",
         "parameters": [
           {
             "name": "unique_id",
@@ -411,11 +383,11 @@
         }
       }
     },
-    "/simulate": {
+    "/v1/simulate": {
       "post": {
         "summary": "Simulate",
         "description": "Run live LightGBM inference for a custom price on one series.\n\nThe most recent feature row for the series is used as context; only\nAveragePrice is swapped out. All other features (lags, rolling stats,\ncalendar, region encodings) remain at their last observed values.\n\nThis answers: \"If I set price to X today, what demand would the model predict?\"",
-        "operationId": "simulate_simulate_post",
+        "operationId": "simulate_v1_simulate_post",
         "parameters": [
           {
             "name": "x-api-key",
@@ -754,26 +726,46 @@
             "const": "ok",
             "title": "Status"
           },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "API version string"
+          },
           "series_loaded": {
             "type": "integer",
             "title": "Series Loaded",
             "description": "Number of market series in the loaded DataStore"
           },
-          "version": {
-            "type": "string",
-            "title": "Version",
-            "description": "API version string"
+          "manifest_ok": {
+            "type": "boolean",
+            "title": "Manifest Ok",
+            "description": "True when all artifact checksums match manifest.json, or when no manifest exists (no manifest = nothing to check)",
+            "default": true
+          },
+          "artifacts_generated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifacts Generated At",
+            "description": "ISO-8601 timestamp from the artifact manifest (null if manifest not present)"
           }
         },
         "type": "object",
         "required": [
           "status",
-          "series_loaded",
-          "version"
+          "version",
+          "series_loaded"
         ],
         "title": "HealthResponse",
         "examples": [
           {
+            "artifacts_generated_at": "2024-03-15T10:30:00+00:00",
+            "manifest_ok": true,
             "series_loaded": 86,
             "status": "ok",
             "version": "0.1.0"
@@ -1221,6 +1213,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
