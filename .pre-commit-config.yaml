@@ -1,9 +1,10 @@
 repos:
-  # Ruff: fast Python linter + import sorter (replaces flake8, isort, pyupgrade)
+  # Ruff: fast Python linter + formatter (replaces flake8, isort, pyupgrade, black)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.4
     hooks:
       - id: ruff
         args: [--fix]
-        # Run on all Python files that are staged for commit
+        types: [python]
+      - id: ruff-format
         types: [python]

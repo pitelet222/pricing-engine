@@ -3,6 +3,9 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
+# uv: fast Python package installer (replaces pip; ~10-100x faster for large stacks)
+COPY --from=ghcr.io/astral-sh/uv:0.11.15 /uv /usr/local/bin/uv
+
 # System deps required by LightGBM, scikit-learn, and PyTorch build chains
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
@@ -10,8 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --upgrade pip \
- && pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements.txt
 
 
 # ---- runtime stage ----

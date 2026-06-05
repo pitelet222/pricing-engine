@@ -9,9 +9,9 @@
 .DEFAULT_GOAL := help
 
 PYTHON := python
-PIP    := $(PYTHON) -m pip
+UV     := uv
 
-.PHONY: help setup setup-full test test-integration test-all lint lint-types api dashboard notebooks clean
+.PHONY: help setup setup-full lock test test-integration test-all lint lint-types api dashboard notebooks clean
 
 help: ## Show this help message
 	@printf "\n\033[1mAvocado Pricing Engine\033[0m — available targets:\n\n"
@@ -23,11 +23,21 @@ help: ## Show this help message
 # Setup
 # ---------------------------------------------------------------------------
 
-setup: ## Install dev dependencies (pytest, ruff, coverage)
-	$(PIP) install -r requirements-dev.txt
+setup: ## Install dev dependencies (pytest, ruff, coverage) via uv
+	$(UV) pip install --system -r requirements-dev.txt
 
-setup-full: ## Install all dependencies including the full ML stack
-	$(PIP) install -r requirements.txt -r requirements-dev.txt
+setup-full: ## Install all dependencies including the full ML stack via uv
+	$(UV) pip install --system -r requirements.txt -r requirements-dev.txt
+
+lock: ## Regenerate CI lock files for Linux Python 3.11 (requires uv)
+	$(UV) pip compile requirements-ci.txt \
+		--python-platform linux \
+		--python-version 3.11 \
+		-o requirements-ci.lock
+	$(UV) pip compile requirements-ci-integration.txt \
+		--python-platform linux \
+		--python-version 3.11 \
+		-o requirements-ci-integration.lock
 
 # ---------------------------------------------------------------------------
 # Tests
@@ -52,8 +62,9 @@ test-all: ## Run every test file, including artefact-gated and integration tests
 # Code quality
 # ---------------------------------------------------------------------------
 
-lint: ## Check code style with ruff
+lint: ## Check code style and formatting with ruff
 	$(PYTHON) -m ruff check src/ tests/ scripts/
+	$(PYTHON) -m ruff format --check src/ tests/ scripts/
 
 lint-types: ## Run mypy static type checker on src/
 	$(PYTHON) -m mypy src/
