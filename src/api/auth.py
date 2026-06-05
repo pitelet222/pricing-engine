@@ -22,6 +22,7 @@ Or in docker-compose.yml:
 Clients pass the key in the X-API-Key header:
     curl -H "X-API-Key: your-secret" http://localhost:8000/series
 """
+
 from __future__ import annotations
 
 from fastapi import Header, HTTPException
@@ -51,7 +52,6 @@ async def verify_api_key(x_api_key: str | None = Header(default=None)) -> None:
         raise HTTPException(
             status_code=401,
             detail=(
-                "Invalid or missing API key. "
-                "Provide your key in the X-API-Key request header."
+                "Invalid or missing API key. Provide your key in the X-API-Key request header."
             ),
         )

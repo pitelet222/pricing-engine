@@ -15,6 +15,7 @@ Series  : 4 (Albany × 2 types, Houston × 2 types)
 Weeks   : 60 per series  →  ~56 rows per series after warmup dropout
 Model   : LightGBM regression, 30 rounds (fast, non-production accuracy)
 """
+
 from __future__ import annotations
 
 import pickle
@@ -52,6 +53,7 @@ _sklearn_prep = pytest.importorskip("sklearn.preprocessing")
 # Toy raw data
 # ---------------------------------------------------------------------------
 
+
 def _make_toy_clean_df(n_weeks: int = 60, seed: int = 0) -> pd.DataFrame:
     """
     Return a minimal cleaned avocado DataFrame: 2 regions × 2 types × n_weeks.
@@ -61,8 +63,8 @@ def _make_toy_clean_df(n_weeks: int = 60, seed: int = 0) -> pd.DataFrame:
     """
     rng = np.random.default_rng(seed)
     series_specs = [
-        ("Albany",  1, 1.80,  50_000),
-        ("Albany",  0, 1.20,  80_000),
+        ("Albany", 1, 1.80, 50_000),
+        ("Albany", 0, 1.20, 80_000),
         ("Houston", 1, 1.90, 100_000),
         ("Houston", 0, 1.15, 200_000),
     ]
@@ -75,20 +77,22 @@ def _make_toy_clean_df(n_weeks: int = 60, seed: int = 0) -> pd.DataFrame:
             d = rng.dirichlet([2.0, 3.0, 1.0])
             p4046, p4225, p4770 = vol * d[0], vol * d[1], vol * d[2]
             bags = vol * 0.30
-            rows.append({
-                "Date":         start + pd.Timedelta(weeks=i),
-                "AveragePrice": round(float(price), 2),
-                "Total Volume": float(vol),
-                "4046":         round(p4046),
-                "4225":         round(p4225),
-                "4770":         round(p4770),
-                "Total Bags":   round(bags),
-                "Small Bags":   round(bags * 0.60),
-                "Large Bags":   round(bags * 0.35),
-                "XLarge Bags":  round(bags * 0.05),
-                "region":       region,
-                "is_organic":   is_organic,
-            })
+            rows.append(
+                {
+                    "Date": start + pd.Timedelta(weeks=i),
+                    "AveragePrice": round(float(price), 2),
+                    "Total Volume": float(vol),
+                    "4046": round(p4046),
+                    "4225": round(p4225),
+                    "4770": round(p4770),
+                    "Total Bags": round(bags),
+                    "Small Bags": round(bags * 0.60),
+                    "Large Bags": round(bags * 0.35),
+                    "XLarge Bags": round(bags * 0.05),
+                    "region": region,
+                    "is_organic": is_organic,
+                }
+            )
     df = pd.DataFrame(rows)
     df["Date"] = pd.to_datetime(df["Date"])
     return df.sort_values("Date").reset_index(drop=True)
@@ -97,6 +101,7 @@ def _make_toy_clean_df(n_weeks: int = 60, seed: int = 0) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # Artefact builder
 # ---------------------------------------------------------------------------
+
 
 def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
     """
@@ -117,9 +122,7 @@ def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
     feat_df = feat_df.copy()
     feat_df["region_encoded"] = le.transform(feat_df["region"])
     feat_df["unique_id"] = (
-        feat_df["region"]
-        + "_"
-        + feat_df["is_organic"].map({1: "organic", 0: "conventional"})
+        feat_df["region"] + "_" + feat_df["is_organic"].map({1: "organic", 0: "conventional"})
     )
 
     # Temporal sort used for train split and for writing processed CSV.
@@ -132,14 +135,14 @@ def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
     y_train = train_df[TARGET_COL].astype(float)
 
     lgb_params = {
-        "objective":      "regression",
-        "metric":         "rmse",
-        "learning_rate":  0.10,
-        "num_leaves":     7,
+        "objective": "regression",
+        "metric": "rmse",
+        "learning_rate": 0.10,
+        "num_leaves": 7,
         "min_child_samples": 5,
-        "n_jobs":         1,
-        "verbose":        -1,
-        "random_state":   42,
+        "n_jobs": 1,
+        "verbose": -1,
+        "random_state": 42,
     }
     model = lgb.train(lgb_params, lgb.Dataset(X_train, label=y_train), num_boost_round=30)
 
@@ -163,22 +166,22 @@ def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
         latest = sub.iloc[-1]
         res = optimize_price(latest, p_mean, model, FEATURE_COLS)
         curr_r = res["current_revenue"]
-        opt_r  = res["optimal_revenue"]
-        rev_pct  = (opt_r - curr_r) / curr_r * 100 if curr_r > 0 else 0.0
-        price_pct = (
-            (res["optimal_price"] - res["current_price"]) / res["current_price"] * 100
+        opt_r = res["optimal_revenue"]
+        rev_pct = (opt_r - curr_r) / curr_r * 100 if curr_r > 0 else 0.0
+        price_pct = (res["optimal_price"] - res["current_price"]) / res["current_price"] * 100
+        rec_rows.append(
+            {
+                "unique_id": uid,
+                "is_organic": int(sub["is_organic"].iloc[0]),
+                "current_price": res["current_price"],
+                "optimal_price": res["optimal_price"],
+                "price_change_pct": round(price_pct, 2),
+                "current_revenue": res["current_revenue"],
+                "optimal_revenue": res["optimal_revenue"],
+                "revenue_change_pct": round(rev_pct, 2),
+                "elasticity": round(compute_elasticity(latest, model, FEATURE_COLS), 4),
+            }
         )
-        rec_rows.append({
-            "unique_id":         uid,
-            "is_organic":        int(sub["is_organic"].iloc[0]),
-            "current_price":     res["current_price"],
-            "optimal_price":     res["optimal_price"],
-            "price_change_pct":  round(price_pct, 2),
-            "current_revenue":   res["current_revenue"],
-            "optimal_revenue":   res["optimal_revenue"],
-            "revenue_change_pct": round(rev_pct, 2),
-            "elasticity":        round(compute_elasticity(latest, model, FEATURE_COLS), 4),
-        })
     pd.DataFrame(rec_rows).to_csv(outputs_dir / "pricing_recommendations.csv", index=False)
 
     # 6. Conformal PI (from in-sample residuals) -----------------------------
@@ -196,11 +199,11 @@ def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
     for q in QUANTILES:
         q_params = {
             **BASE_QUANTILE_PARAMS,
-            "alpha":             q,
-            "num_leaves":        7,
+            "alpha": q,
+            "num_leaves": 7,
             "min_child_samples": 5,
-            "n_jobs":            1,
-            "random_state":      42,
+            "n_jobs": 1,
+            "random_state": 42,
         }
         quant_models[q] = lgb.train(
             q_params, lgb.Dataset(X_train, label=y_train), num_boost_round=30
@@ -224,20 +227,20 @@ def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
     for uid in series_ids:
         sub = feat_df[feat_df["unique_id"] == uid]
         latest = sub.iloc[-1]
-        pred = float(
-            model.predict(latest[FEATURE_COLS].to_frame().T.astype(float))[0]
-        )
+        pred = float(model.predict(latest[FEATURE_COLS].to_frame().T.astype(float))[0])
         for h in range(1, 13):
-            forecast_rows.append({
-                "unique_id":        uid,
-                "ds":               (last_date + pd.Timedelta(weeks=h)).date(),
-                "Ensemble_weighted": round(pred, 4),
-                "MSTL_ETS":         round(pred * 1.001, 4),
-                "MSTL_ARIMA":       round(pred * 0.999, 4),
-                "MSTL_Theta":       round(pred * 1.002, 4),
-                "NHITS":            round(pred * 0.998, 4),
-                "SeasonalNaive":    round(pred * 1.003, 4),
-            })
+            forecast_rows.append(
+                {
+                    "unique_id": uid,
+                    "ds": (last_date + pd.Timedelta(weeks=h)).date(),
+                    "Ensemble_weighted": round(pred, 4),
+                    "MSTL_ETS": round(pred * 1.001, 4),
+                    "MSTL_ARIMA": round(pred * 0.999, 4),
+                    "MSTL_Theta": round(pred * 1.002, 4),
+                    "NHITS": round(pred * 0.998, 4),
+                    "SeasonalNaive": round(pred * 1.003, 4),
+                }
+            )
     pd.DataFrame(forecast_rows).to_csv(outputs_dir / "forecast_future.csv", index=False)
 
     # 9. SHAP-like drivers (proxy: top-3 features by LightGBM gain) --------
@@ -252,21 +255,24 @@ def _build_toy_artifacts(outputs_dir: Path, processed_dir: Path) -> None:
         for rank, feat_idx in enumerate(top3_idx, start=1):
             feat_name = FEATURE_COLS[feat_idx]
             shap_val = round(float(gains[feat_idx]) / max_gain * 0.50, 6)
-            shap_rows.append({
-                "unique_id":     uid,
-                "driver_rank":   rank,
-                "feature":       feat_name,
-                "shap_value":    shap_val,
-                "abs_shap_value": abs(shap_val),
-                "direction":     "increases_demand",
-                "feature_value": round(float(latest[feat_name]), 6),
-            })
+            shap_rows.append(
+                {
+                    "unique_id": uid,
+                    "driver_rank": rank,
+                    "feature": feat_name,
+                    "shap_value": shap_val,
+                    "abs_shap_value": abs(shap_val),
+                    "direction": "increases_demand",
+                    "feature_value": round(float(latest[feat_name]), 6),
+                }
+            )
     pd.DataFrame(shap_rows).to_csv(outputs_dir / "shap_top_drivers.csv", index=False)
 
 
 # ---------------------------------------------------------------------------
 # Session fixture
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def integration_client(tmp_path_factory):
@@ -296,6 +302,7 @@ def integration_client(tmp_path_factory):
         patch.object(_loader, "_PROCESSED", processed_dir),
     ):
         from src.api.main import app
+
         with TestClient(app) as client:
             yield client
 

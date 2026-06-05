@@ -7,6 +7,7 @@ small helpers (_require_series, _cache_hit, _cache_miss) used by every endpoint.
 Kept in a separate module so sub-modules can import from here without creating
 circular imports with __init__.py.
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Any, cast
@@ -41,6 +42,5 @@ def _require_series(ds: DataStore, unique_id: str) -> None:
     if unique_id not in ds.series_meta:
         raise HTTPException(
             status_code=404,
-            detail=f"Series '{unique_id}' not found. "
-                   f"Call GET /series for the full list.",
+            detail=f"Series '{unique_id}' not found. Call GET /series for the full list.",
         )

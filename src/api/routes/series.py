@@ -1,4 +1,5 @@
 """GET /v1/series — list all 86 avocado market series."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Query

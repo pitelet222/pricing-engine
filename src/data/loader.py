@@ -87,6 +87,7 @@ class DataStore:
 # Private helpers
 # ---------------------------------------------------------------------------
 
+
 def _require(path: pathlib.Path) -> pathlib.Path:
     """Raise a clear FileNotFoundError if a required artefact is missing."""
     if not path.exists():
@@ -134,19 +135,13 @@ def _build_latest_ctx(
     """
     df = pd.read_csv(features_path, parse_dates=["Date"])
 
-    df["unique_id"] = (
-        df["region"] + "_"
-        + df["is_organic"].map({1: "organic", 0: "conventional"})
-    )
+    df["unique_id"] = df["region"] + "_" + df["is_organic"].map({1: "organic", 0: "conventional"})
 
     # Must use the training-time encoder so integer codes match what the model saw.
     df["region_encoded"] = label_encoder.transform(df["region"])
 
     latest = (
-        df.sort_values("Date")
-        .groupby("unique_id", group_keys=False)
-        .tail(1)
-        .reset_index(drop=True)
+        df.sort_values("Date").groupby("unique_id", group_keys=False).tail(1).reset_index(drop=True)
     )
     return latest
 
@@ -170,6 +165,7 @@ def _build_series_meta(recommendations_df: pd.DataFrame) -> dict[str, dict]:
 # ---------------------------------------------------------------------------
 # Startup data integrity validation
 # ---------------------------------------------------------------------------
+
 
 def _validate(ds: DataStore) -> None:
     """
@@ -195,7 +191,8 @@ def _validate(ds: DataStore) -> None:
     if not bad.empty:
         _log.warning(
             "validation: %d series have != 12 forecast weeks: %s",
-            len(bad), list(bad.index[:5]),
+            len(bad),
+            list(bad.index[:5]),
         )
         issues += len(bad)
 
@@ -204,7 +201,8 @@ def _validate(ds: DataStore) -> None:
     if not bad_price.empty:
         _log.warning(
             "validation: %d series have non-positive optimal_price: %s",
-            len(bad_price), list(bad_price["unique_id"][:5]),
+            len(bad_price),
+            list(bad_price["unique_id"][:5]),
         )
         issues += len(bad_price)
 
@@ -223,7 +221,8 @@ def _validate(ds: DataStore) -> None:
     if not bad_ranks.empty:
         _log.warning(
             "validation: %d series have incomplete SHAP driver ranks: %s",
-            len(bad_ranks), list(bad_ranks.index[:5]),
+            len(bad_ranks),
+            list(bad_ranks.index[:5]),
         )
         issues += len(bad_ranks)
 
@@ -252,6 +251,7 @@ def _validate(ds: DataStore) -> None:
 # ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
+
 
 def load_datastore() -> DataStore:
     """

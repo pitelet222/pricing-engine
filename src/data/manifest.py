@@ -7,6 +7,7 @@ and returns a (possibly empty) list of human-readable issue strings.
 
 Both functions are pure I/O — no ML dependencies.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -19,13 +20,13 @@ from datetime import datetime, timezone
 # ---------------------------------------------------------------------------
 # Format: (dir_key, filename) — "outputs" → outputs_dir, "processed" → processed_dir.
 _ARTIFACTS: tuple[tuple[str, str], ...] = (
-    ("outputs",   "forecast_future.csv"),
-    ("outputs",   "conformal_pi_stats.csv"),
-    ("outputs",   "region_label_encoder.pkl"),
-    ("outputs",   "demand_model.pkl"),
-    ("outputs",   "pricing_recommendations.csv"),
-    ("outputs",   "uncertainty_pricing.csv"),
-    ("outputs",   "shap_top_drivers.csv"),
+    ("outputs", "forecast_future.csv"),
+    ("outputs", "conformal_pi_stats.csv"),
+    ("outputs", "region_label_encoder.pkl"),
+    ("outputs", "demand_model.pkl"),
+    ("outputs", "pricing_recommendations.csv"),
+    ("outputs", "uncertainty_pricing.csv"),
+    ("outputs", "shap_top_drivers.csv"),
     ("processed", "avocado_features.csv"),
 )
 
@@ -35,6 +36,7 @@ _MANIFEST_NAME = "manifest.json"
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _sha256(path: pathlib.Path) -> str:
     h = hashlib.sha256()
@@ -47,6 +49,7 @@ def _sha256(path: pathlib.Path) -> str:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def write_manifest(outputs_dir: pathlib.Path, processed_dir: pathlib.Path) -> pathlib.Path:
     """Compute SHA-256 checksums for all artifacts and write manifest.json.

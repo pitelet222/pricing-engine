@@ -5,6 +5,7 @@ No model artifacts required — always runs in CI.
 Uses monkeypatching to reduce the limit so tests stay fast (no need to loop
 30 times for every assertion).
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

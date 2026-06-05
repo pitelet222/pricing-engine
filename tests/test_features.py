@@ -23,6 +23,7 @@ from src.data.features import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _base_row(region="Albany", is_organic=0, date="2016-01-03") -> dict:
     return {
         "Date": pd.Timestamp(date),
@@ -63,6 +64,7 @@ def _make_clean_df(
 # add_temporal_features
 # ---------------------------------------------------------------------------
 
+
 def test_add_temporal_features_adds_cyclical_cols():
     df = pd.DataFrame([_base_row()])
     result = add_temporal_features(df)
@@ -96,6 +98,7 @@ def test_month_cos_january_close_to_one():
 # add_holiday_flag
 # ---------------------------------------------------------------------------
 
+
 def test_super_bowl_2016_flagged():
     # Super Bowl 2016: 2016-02-07
     row = _base_row(date="2016-02-07")
@@ -120,6 +123,7 @@ def test_holiday_flag_is_integer():
 # ---------------------------------------------------------------------------
 # add_volume_features
 # ---------------------------------------------------------------------------
+
 
 def test_log_total_volume_nonnegative():
     df = pd.DataFrame([_base_row()])
@@ -153,6 +157,7 @@ def test_log_transforms_monotone():
 # ---------------------------------------------------------------------------
 # add_lag_rolling_features
 # ---------------------------------------------------------------------------
+
 
 def test_first_row_lag_is_nan():
     df = _make_clean_df(n_weeks=10, regions=["Albany"])
@@ -191,6 +196,7 @@ def test_rolling_mean_not_nan_after_warmup():
 # add_region_encodings
 # ---------------------------------------------------------------------------
 
+
 def test_region_encodings_added():
     df = _make_clean_df(n_weeks=15, regions=["Albany", "Houston"])
     df_t = add_temporal_features(df)
@@ -216,12 +222,13 @@ def test_region_volume_level_is_log_transformed():
 # build_features — end-to-end column count
 # ---------------------------------------------------------------------------
 
+
 def test_build_features_output_has_42_columns():
     df = _make_clean_df(n_weeks=20, regions=["Albany", "Houston"])
     result = build_features(df)
-    assert len(result.columns) == 42, (
-        f"Expected 42 columns, got {len(result.columns)}: {sorted(result.columns)}"
-    )
+    assert (
+        len(result.columns) == 42
+    ), f"Expected 42 columns, got {len(result.columns)}: {sorted(result.columns)}"
 
 
 def test_build_features_no_nans_in_feature_cols():

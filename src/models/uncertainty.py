@@ -132,10 +132,7 @@ def revenue_scenarios(
         rows.append(r[feature_cols].values)
 
     X_grid = np.array(rows)
-    return {
-        q: price_grid * np.exp(model.predict(X_grid))
-        for q, model in quantile_models.items()
-    }
+    return {q: price_grid * np.exp(model.predict(X_grid)) for q, model in quantile_models.items()}
 
 
 def optimize_strategies(
@@ -233,15 +230,9 @@ def compute_risk_metrics(strategy_df: pd.DataFrame) -> pd.DataFrame:
     df["uplift_mean"] = df[uplift_cols].mean(axis=1)
     df["uplift_sharpe"] = df["uplift_mean"] / df["uplift_std"].clip(lower=0.01)
 
-    df["price_direction_conservative"] = np.sign(
-        df["opt_price_conservative"] - df["current_price"]
-    )
-    df["price_direction_aggressive"] = np.sign(
-        df["opt_price_aggressive"] - df["current_price"]
-    )
-    df["strategies_agree"] = (
-        df["price_direction_conservative"] == df["price_direction_aggressive"]
-    )
+    df["price_direction_conservative"] = np.sign(df["opt_price_conservative"] - df["current_price"])
+    df["price_direction_aggressive"] = np.sign(df["opt_price_aggressive"] - df["current_price"])
+    df["strategies_agree"] = df["price_direction_conservative"] == df["price_direction_aggressive"]
     return df
 
 

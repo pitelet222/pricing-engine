@@ -7,6 +7,7 @@ in dollars, interactive price simulator, and plain-language demand insights.
 Run from the project root:
     streamlit run src/dashboard/app.py
 """
+
 from __future__ import annotations
 
 import math
@@ -98,12 +99,14 @@ st.title(f"{selected_region} — {selected_type_label} Avocados")
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab_rec, tab_sim, tab_risk, tab_why = st.tabs([
-    "Pricing Recommendation",
-    "Price Simulator",
-    "Risk & Strategies",
-    "What Drives Demand?",
-])
+tab_rec, tab_sim, tab_risk, tab_why = st.tabs(
+    [
+        "Pricing Recommendation",
+        "Price Simulator",
+        "Risk & Strategies",
+        "What Drives Demand?",
+    ]
+)
 
 # ── Pricing Recommendation ────────────────────────────────────────────────────
 with tab_rec:
@@ -218,9 +221,7 @@ with tab_sim:
     )
 
     # Live LightGBM inference — swap AveragePrice, keep everything else fixed.
-    ctx_row = ds.latest_ctx_df[
-        ds.latest_ctx_df["unique_id"] == selected_uid
-    ].iloc[0].copy()
+    ctx_row = ds.latest_ctx_df[ds.latest_ctx_df["unique_id"] == selected_uid].iloc[0].copy()
     current_volume = float(ctx_row["Total Volume"])
     ctx_row["AveragePrice"] = test_price
 
@@ -371,9 +372,8 @@ with tab_why:
         "demand changes before they happen."
     )
 
-    drivers = (
-        ds.shap_drivers_df[ds.shap_drivers_df["unique_id"] == selected_uid]
-        .sort_values("driver_rank")
+    drivers = ds.shap_drivers_df[ds.shap_drivers_df["unique_id"] == selected_uid].sort_values(
+        "driver_rank"
     )
 
     # Technical feature names → plain business language
@@ -408,9 +408,7 @@ with tab_why:
 
     st.markdown("---")
     for _, row in drivers.iterrows():
-        label = _FEATURE_LABELS.get(
-            row["feature"], row["feature"].replace("_", " ").title()
-        )
+        label = _FEATURE_LABELS.get(row["feature"], row["feature"].replace("_", " ").title())
         is_positive = row["direction"] == "increases_demand"
         direction_text = "boosts" if is_positive else "reduces"
         value = float(row["feature_value"])

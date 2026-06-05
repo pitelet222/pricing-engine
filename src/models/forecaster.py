@@ -71,9 +71,7 @@ def build_nixtla_df(df: pd.DataFrame) -> pd.DataFrame:
     is_holiday_week, is_organic, region_price_level, region_volume_level.
     """
     df = df.copy()
-    df["unique_id"] = df["region"] + "_" + df["is_organic"].map(
-        {0: "conventional", 1: "organic"}
-    )
+    df["unique_id"] = df["region"] + "_" + df["is_organic"].map({0: "conventional", 1: "organic"})
     nf_df = df.rename(columns={"Date": "ds", "AveragePrice": "y"})
     cols = ["unique_id", "ds", "y"] + FUTR_EXOG + STAT_EXOG
     return nf_df[cols].sort_values(["unique_id", "ds"]).reset_index(drop=True)
@@ -100,26 +98,24 @@ def build_future_exog(nf_df: pd.DataFrame, h: int = H) -> pd.DataFrame:
     last_dates = nf_df.groupby("unique_id")["ds"].max()
     rows = []
     for uid, last_date in last_dates.items():
-        future_dates = pd.date_range(
-            start=last_date + pd.Timedelta(weeks=1), periods=h, freq="W"
-        )
+        future_dates = pd.date_range(start=last_date + pd.Timedelta(weeks=1), periods=h, freq="W")
         for d in future_dates:
             iso_week = d.isocalendar()[1]
-            rows.append({
-                "unique_id": uid,
-                "ds": d,
-                "month_sin": np.sin(2 * np.pi * d.month / 12),
-                "month_cos": np.cos(2 * np.pi * d.month / 12),
-                "week_sin": np.sin(2 * np.pi * iso_week / 52),
-                "week_cos": np.cos(2 * np.pi * iso_week / 52),
-                "is_holiday_week": 0,
-            })
+            rows.append(
+                {
+                    "unique_id": uid,
+                    "ds": d,
+                    "month_sin": np.sin(2 * np.pi * d.month / 12),
+                    "month_cos": np.cos(2 * np.pi * d.month / 12),
+                    "week_sin": np.sin(2 * np.pi * iso_week / 52),
+                    "week_cos": np.cos(2 * np.pi * iso_week / 52),
+                    "is_holiday_week": 0,
+                }
+            )
     return pd.DataFrame(rows)
 
 
-def compute_ensemble_weights(
-    all_cv: pd.DataFrame, all_models: list[str]
-) -> dict[str, float]:
+def compute_ensemble_weights(all_cv: pd.DataFrame, all_models: list[str]) -> dict[str, float]:
     """
     Compute inverse-MAE ensemble weights from cross-validation predictions.
 
@@ -135,9 +131,7 @@ def compute_ensemble_weights(
     -------
     dict mapping each model name to its normalised weight (all weights sum to 1).
     """
-    inv_mae = {
-        m: 1.0 / float(np.abs(all_cv["y"] - all_cv[m]).mean()) for m in all_models
-    }
+    inv_mae = {m: 1.0 / float(np.abs(all_cv["y"] - all_cv[m]).mean()) for m in all_models}
     total = sum(inv_mae.values())
     return {m: v / total for m, v in inv_mae.items()}
 

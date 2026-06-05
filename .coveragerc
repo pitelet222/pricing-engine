@@ -1,0 +1,21 @@
+[run]
+source = src
+omit =
+    # Requires model artifacts at runtime — tested via test_integration.py
+    src/data/loader.py
+    # Full app startup tested via integration tests only
+    src/api/main.py
+    # Middleware exercised only through the running app
+    src/api/middleware.py
+    # Route handlers are tested via test_integration.py, not unit tests
+    src/api/routes/*
+    # Streamlit entry point — not unit-testable
+    src/dashboard/app.py
+
+[report]
+omit =
+    src/data/loader.py
+    src/api/main.py
+    src/api/middleware.py
+    src/api/routes/*
+    src/dashboard/app.py

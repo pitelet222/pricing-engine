@@ -75,12 +75,13 @@ def compute_shap_global(  # pragma: no cover
     import shap
 
     sample_idx = (
-        meta_df
-        .groupby("unique_id", group_keys=False)
-        .apply(lambda g: g.sample(
-            n=min(len(g), max(1, round(n_sample * len(g) / len(meta_df)))),
-            random_state=seed,
-        ))
+        meta_df.groupby("unique_id", group_keys=False)
+        .apply(
+            lambda g: g.sample(
+                n=min(len(g), max(1, round(n_sample * len(g) / len(meta_df)))),
+                random_state=seed,
+            )
+        )
         .index
     )
     X_shap = X_all.loc[sample_idx][feature_cols].reset_index(drop=True)
@@ -152,17 +153,19 @@ def build_top_drivers(
         top_idx = abs_shap.argsort()[-n:][::-1]
         feat_row = latest_ctx.iloc[idx]
         for rank, feat_idx in enumerate(top_idx, start=1):
-            rows.append({
-                "unique_id": uid,
-                "driver_rank": rank,
-                "feature": feature_cols[feat_idx],
-                "shap_value": round(float(shap_row[feat_idx]), 6),
-                "abs_shap_value": round(float(abs_shap[feat_idx]), 6),
-                "direction": (
-                    "increases_demand" if shap_row[feat_idx] > 0 else "decreases_demand"
-                ),
-                "feature_value": round(float(feat_row[feature_cols[feat_idx]]), 6),
-            })
+            rows.append(
+                {
+                    "unique_id": uid,
+                    "driver_rank": rank,
+                    "feature": feature_cols[feat_idx],
+                    "shap_value": round(float(shap_row[feat_idx]), 6),
+                    "abs_shap_value": round(float(abs_shap[feat_idx]), 6),
+                    "direction": (
+                        "increases_demand" if shap_row[feat_idx] > 0 else "decreases_demand"
+                    ),
+                    "feature_value": round(float(feat_row[feature_cols[feat_idx]]), 6),
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -246,6 +249,6 @@ def generate_pricing_narrative(
         + "\n".join(driver_lines)
         + f"\n\n*Pricing note:* the revenue-maximising price was found via grid search "
         f"over ±30% of the historical mean. A {abs(price_change):.1f}% "
-        f'{"reduction" if price_change < 0 else "increase"} '
+        f"{'reduction' if price_change < 0 else 'increase'} "
         f"moves price closer to the revenue curve peak identified during model training."
     )

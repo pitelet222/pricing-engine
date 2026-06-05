@@ -13,6 +13,7 @@ Cardinality note
 The `endpoint` label uses the FastAPI route template (e.g. `/forecast/{unique_id}`)
 rather than the raw path, so 86 series don't create 86 distinct time-series.
 """
+
 from __future__ import annotations
 
 from prometheus_client import Counter, Histogram

@@ -1,4 +1,5 @@
 """POST /v1/simulate — live LightGBM inference for a custom price."""
+
 from __future__ import annotations
 
 import math
@@ -29,9 +30,7 @@ def simulate(req: SimulateRequest, ds: DataStoreDep) -> SimulateResponse:
     """
     _require_series(ds, req.unique_id)
 
-    ctx_row = ds.latest_ctx_df[
-        ds.latest_ctx_df["unique_id"] == req.unique_id
-    ].iloc[0].copy()
+    ctx_row = ds.latest_ctx_df[ds.latest_ctx_df["unique_id"] == req.unique_id].iloc[0].copy()
 
     current_price: float = float(ctx_row["AveragePrice"])
     current_volume: float = float(ctx_row["Total Volume"])

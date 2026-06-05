@@ -7,6 +7,7 @@ These tests always run in CI. They verify that:
   - Enum literals reject unknown values
   - Optional fields accept None
 """
+
 import datetime
 
 import pytest
@@ -32,6 +33,7 @@ from src.api.schemas import (
 # ---------------------------------------------------------------------------
 # HealthResponse
 # ---------------------------------------------------------------------------
+
 
 class TestHealthResponse:
     def test_valid(self):
@@ -61,7 +63,9 @@ class TestHealthResponse:
 
     def test_artifacts_generated_at_accepts_timestamp(self):
         h = HealthResponse(
-            status="ok", series_loaded=86, version="0.1.0",
+            status="ok",
+            series_loaded=86,
+            version="0.1.0",
             artifacts_generated_at="2024-03-15T10:30:00+00:00",
         )
         assert h.artifacts_generated_at == "2024-03-15T10:30:00+00:00"
@@ -71,9 +75,12 @@ class TestHealthResponse:
 # SeriesItem / SeriesListResponse
 # ---------------------------------------------------------------------------
 
+
 class TestSeriesItem:
     def test_valid(self):
-        s = SeriesItem(unique_id="Albany_conventional", region="Albany", avocado_type="conventional")
+        s = SeriesItem(
+            unique_id="Albany_conventional", region="Albany", avocado_type="conventional"
+        )
         assert s.region == "Albany"
 
     def test_invalid_type(self):
@@ -85,7 +92,9 @@ class TestSeriesItem:
         SeriesItem(unique_id="b", region="r", avocado_type="conventional")
 
     def test_list_response(self):
-        items = [SeriesItem(unique_id=f"s{i}", region="R", avocado_type="organic") for i in range(3)]
+        items = [
+            SeriesItem(unique_id=f"s{i}", region="R", avocado_type="organic") for i in range(3)
+        ]
         resp = SeriesListResponse(total=3, limit=3, offset=0, series=items)
         assert resp.total == 3
         assert resp.limit == 3
@@ -153,6 +162,7 @@ class TestForecastResponse:
 # RecommendationResponse
 # ---------------------------------------------------------------------------
 
+
 class TestRecommendationResponse:
     def test_valid(self):
         rec = RecommendationResponse(
@@ -178,6 +188,7 @@ class TestRecommendationResponse:
 # ShapDriver / ExplainResponse
 # ---------------------------------------------------------------------------
 
+
 class TestShapDriver:
     def test_valid(self):
         d = ShapDriver(
@@ -192,31 +203,60 @@ class TestShapDriver:
 
     def test_rank_below_1(self):
         with pytest.raises(ValidationError):
-            ShapDriver(driver_rank=0, feature="x", shap_value=0.1,
-                       abs_shap_value=0.1, direction="increases_demand", feature_value=1.0)
+            ShapDriver(
+                driver_rank=0,
+                feature="x",
+                shap_value=0.1,
+                abs_shap_value=0.1,
+                direction="increases_demand",
+                feature_value=1.0,
+            )
 
     def test_rank_above_3(self):
         with pytest.raises(ValidationError):
-            ShapDriver(driver_rank=4, feature="x", shap_value=0.1,
-                       abs_shap_value=0.1, direction="increases_demand", feature_value=1.0)
+            ShapDriver(
+                driver_rank=4,
+                feature="x",
+                shap_value=0.1,
+                abs_shap_value=0.1,
+                direction="increases_demand",
+                feature_value=1.0,
+            )
 
     def test_invalid_direction(self):
         with pytest.raises(ValidationError):
-            ShapDriver(driver_rank=1, feature="x", shap_value=0.1,
-                       abs_shap_value=0.1, direction="neutral", feature_value=1.0)
+            ShapDriver(
+                driver_rank=1,
+                feature="x",
+                shap_value=0.1,
+                abs_shap_value=0.1,
+                direction="neutral",
+                feature_value=1.0,
+            )
 
     def test_both_directions_valid(self):
         for direction in ("increases_demand", "decreases_demand"):
-            ShapDriver(driver_rank=1, feature="x", shap_value=0.1,
-                       abs_shap_value=0.1, direction=direction, feature_value=1.0)
+            ShapDriver(
+                driver_rank=1,
+                feature="x",
+                shap_value=0.1,
+                abs_shap_value=0.1,
+                direction=direction,
+                feature_value=1.0,
+            )
 
 
 class TestExplainResponse:
     def test_valid_three_drivers(self):
         drivers = [
-            ShapDriver(driver_rank=i, feature=f"f{i}", shap_value=float(i) * 0.1,
-                       abs_shap_value=float(i) * 0.1, direction="increases_demand",
-                       feature_value=float(i))
+            ShapDriver(
+                driver_rank=i,
+                feature=f"f{i}",
+                shap_value=float(i) * 0.1,
+                abs_shap_value=float(i) * 0.1,
+                direction="increases_demand",
+                feature_value=float(i),
+            )
             for i in range(1, 4)
         ]
         resp = ExplainResponse(unique_id="x", drivers=drivers)
@@ -226,6 +266,7 @@ class TestExplainResponse:
 # ---------------------------------------------------------------------------
 # SimulateRequest / SimulateResponse
 # ---------------------------------------------------------------------------
+
 
 class TestSimulateRequest:
     def test_valid(self):
@@ -261,6 +302,7 @@ class TestSimulateResponse:
 # ---------------------------------------------------------------------------
 # BatchRecommendRequest / BatchRecommendResponse
 # ---------------------------------------------------------------------------
+
 
 class TestBatchRecommendRequest:
     def test_valid(self):

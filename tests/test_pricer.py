@@ -19,6 +19,7 @@ from src.models.pricer import FEATURE_COLS, compute_elasticity, optimize_price, 
 # Mock model
 # ---------------------------------------------------------------------------
 
+
 class _LogLinearMockModel:
     """
     Returns intercept - coeff * AveragePrice as log-volume prediction.
@@ -51,6 +52,7 @@ def _make_context_row(price: float = 1.5) -> pd.Series:
 # ---------------------------------------------------------------------------
 # revenue_curve
 # ---------------------------------------------------------------------------
+
 
 def test_revenue_curve_same_length_as_grid():
     model = _LogLinearMockModel()
@@ -90,13 +92,18 @@ def test_revenue_curve_nonnegative():
 # optimize_price
 # ---------------------------------------------------------------------------
 
+
 def test_optimize_price_returns_required_keys():
     model = _LogLinearMockModel()
     row = _make_context_row(price=1.5)
     result = optimize_price(row, p_mean=1.5, model=model, feature_cols=FEATURE_COLS)
     required = {
-        "current_price", "optimal_price", "current_revenue",
-        "optimal_revenue", "price_grid", "revenue_curve",
+        "current_price",
+        "optimal_price",
+        "current_revenue",
+        "optimal_revenue",
+        "price_grid",
+        "revenue_curve",
     }
     assert required.issubset(result.keys())
 
@@ -122,9 +129,7 @@ def test_optimize_price_optimal_ge_current_revenue():
 def test_optimize_price_grid_length():
     model = _LogLinearMockModel()
     row = _make_context_row(price=1.5)
-    result = optimize_price(
-        row, p_mean=1.5, model=model, feature_cols=FEATURE_COLS, n_points=50
-    )
+    result = optimize_price(row, p_mean=1.5, model=model, feature_cols=FEATURE_COLS, n_points=50)
     assert len(result["price_grid"]) == 50
     assert len(result["revenue_curve"]) == 50
 
@@ -141,6 +146,7 @@ def test_optimize_price_prices_are_rounded():
 # ---------------------------------------------------------------------------
 # compute_elasticity
 # ---------------------------------------------------------------------------
+
 
 def test_compute_elasticity_negative_for_downward_demand():
     model = _LogLinearMockModel(coeff=0.5)

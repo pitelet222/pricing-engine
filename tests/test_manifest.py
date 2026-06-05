@@ -3,6 +3,7 @@ Unit tests for src/data/manifest.py — no model artifacts required.
 
 All tests use tmp_path fixtures; no real data/outputs/ is touched.
 """
+
 from __future__ import annotations
 
 import hashlib

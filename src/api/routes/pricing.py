@@ -2,6 +2,7 @@
 GET  /v1/recommend/{unique_id}  — revenue-maximising price for one series.
 POST /v1/batch-recommend        — recommendations for multiple series in one call.
 """
+
 from __future__ import annotations
 
 from typing import cast
@@ -35,9 +36,7 @@ def _build_recommendation(ds: DataStore, unique_id: str) -> RecommendationRespon
         return cast(RecommendationResponse, _CACHE[cache_key])
 
     _cache_miss(_ep)
-    row = ds.recommendations_df[
-        ds.recommendations_df["unique_id"] == unique_id
-    ].iloc[0]
+    row = ds.recommendations_df[ds.recommendations_df["unique_id"] == unique_id].iloc[0]
 
     result = RecommendationResponse(
         unique_id=unique_id,

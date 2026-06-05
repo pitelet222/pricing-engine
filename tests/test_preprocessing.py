@@ -17,6 +17,7 @@ from src.data.preprocessing import AGGREGATE_REGIONS, clean_data, load_raw_data
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_raw_df(regions: list[str], n_dates: int = 3) -> pd.DataFrame:
     """Minimal DataFrame matching the post-load_raw_data schema."""
     dates = pd.date_range("2015-01-01", periods=n_dates, freq="W")
@@ -24,21 +25,23 @@ def _make_raw_df(regions: list[str], n_dates: int = 3) -> pd.DataFrame:
     for region in regions:
         for d in dates:
             for avocado_type in ("organic", "conventional"):
-                rows.append({
-                    "Date": d,
-                    "AveragePrice": 1.5,
-                    "Total Volume": 1000.0,
-                    "4046": 400.0,
-                    "4225": 350.0,
-                    "4770": 50.0,
-                    "Total Bags": 200.0,
-                    "Small Bags": 150.0,
-                    "Large Bags": 40.0,
-                    "XLarge Bags": 10.0,
-                    "type": avocado_type,
-                    "year": d.year,
-                    "region": region,
-                })
+                rows.append(
+                    {
+                        "Date": d,
+                        "AveragePrice": 1.5,
+                        "Total Volume": 1000.0,
+                        "4046": 400.0,
+                        "4225": 350.0,
+                        "4770": 50.0,
+                        "Total Bags": 200.0,
+                        "Small Bags": 150.0,
+                        "Large Bags": 40.0,
+                        "XLarge Bags": 10.0,
+                        "type": avocado_type,
+                        "year": d.year,
+                        "region": region,
+                    }
+                )
     return pd.DataFrame(rows)
 
 
@@ -46,15 +49,24 @@ def _make_raw_df(regions: list[str], n_dates: int = 3) -> pd.DataFrame:
 # AGGREGATE_REGIONS constant
 # ---------------------------------------------------------------------------
 
+
 def test_aggregate_regions_contains_totalus():
     assert "TotalUS" in AGGREGATE_REGIONS
 
 
 def test_aggregate_regions_contains_all_expected():
     expected = {
-        "TotalUS", "West", "SouthCentral", "Southeast", "Northeast",
-        "Midsouth", "GreatLakes", "Plains", "California",
-        "WestTexNewMexico", "NorthernNewEngland",
+        "TotalUS",
+        "West",
+        "SouthCentral",
+        "Southeast",
+        "Northeast",
+        "Midsouth",
+        "GreatLakes",
+        "Plains",
+        "California",
+        "WestTexNewMexico",
+        "NorthernNewEngland",
     }
     assert expected == set(AGGREGATE_REGIONS)
 
@@ -62,6 +74,7 @@ def test_aggregate_regions_contains_all_expected():
 # ---------------------------------------------------------------------------
 # clean_data
 # ---------------------------------------------------------------------------
+
 
 def test_clean_data_removes_aggregate_regions():
     df = _make_raw_df(["TotalUS", "West", "Albany"])
@@ -119,6 +132,7 @@ def test_clean_data_all_aggregate_regions_removed():
 # ---------------------------------------------------------------------------
 # load_raw_data
 # ---------------------------------------------------------------------------
+
 
 def test_load_raw_data_parses_date():
     raw = _make_raw_df(["Albany"], n_dates=3)

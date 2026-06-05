@@ -15,6 +15,7 @@ The combined `router` is imported by main.py and mounted at /v1/.
 `_CACHE` is re-exported here so existing references (e.g. test fixtures that
 call `src.api.routes._CACHE.clear()`) continue to work without change.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter

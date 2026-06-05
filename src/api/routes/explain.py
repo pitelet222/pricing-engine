@@ -2,6 +2,7 @@
 GET /v1/explain/{unique_id}     — top-3 SHAP demand drivers for one series.
 GET /v1/uncertainty/{unique_id} — three-strategy uncertainty analysis for one series.
 """
+
 from __future__ import annotations
 
 from typing import cast
@@ -42,9 +43,9 @@ def get_explanation(unique_id: str, ds: DataStoreDep) -> ExplainResponse:
         return cast(ExplainResponse, _CACHE[cache_key])
 
     _cache_miss(_ep)
-    series_shap = ds.shap_drivers_df[
-        ds.shap_drivers_df["unique_id"] == unique_id
-    ].sort_values("driver_rank")
+    series_shap = ds.shap_drivers_df[ds.shap_drivers_df["unique_id"] == unique_id].sort_values(
+        "driver_rank"
+    )
 
     drivers = [
         ShapDriver(

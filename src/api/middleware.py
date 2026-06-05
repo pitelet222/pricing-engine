@@ -19,6 +19,7 @@ AccessLogMiddleware does three things per request:
    Uses the FastAPI route template (e.g. /forecast/{unique_id}) rather than
    the raw path to avoid label cardinality explosion across 86 series.
 """
+
 from __future__ import annotations
 
 import logging

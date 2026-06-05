@@ -21,19 +21,21 @@ import pandas as pd
 # The Hass Avocado Board dataset mixes 43 city-level markets with 11 aggregations
 # (e.g. TotalUS = sum of all US regions). Keeping aggregates would double-count
 # volume and distort per-region demand models.
-AGGREGATE_REGIONS: frozenset[str] = frozenset({
-    "TotalUS",
-    "West",
-    "SouthCentral",
-    "Southeast",
-    "Northeast",
-    "Midsouth",
-    "GreatLakes",
-    "Plains",
-    "California",
-    "WestTexNewMexico",
-    "NorthernNewEngland",
-})
+AGGREGATE_REGIONS: frozenset[str] = frozenset(
+    {
+        "TotalUS",
+        "West",
+        "SouthCentral",
+        "Southeast",
+        "Northeast",
+        "Midsouth",
+        "GreatLakes",
+        "Plains",
+        "California",
+        "WestTexNewMexico",
+        "NorthernNewEngland",
+    }
+)
 
 
 def load_raw_data(path: pathlib.Path | str) -> pd.DataFrame:

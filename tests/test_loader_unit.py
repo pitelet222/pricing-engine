@@ -10,6 +10,7 @@ Coverage:
   - _build_series_meta: dict construction, region extraction, avocado_type assignment
   - DataStore: field names match the documented contract
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -23,6 +24,7 @@ from src.data.loader import DataStore, _build_series_meta, _require
 # ---------------------------------------------------------------------------
 # _require
 # ---------------------------------------------------------------------------
+
 
 class TestRequire:
     def test_raises_for_missing_path(self, tmp_path):
@@ -57,14 +59,16 @@ class TestRequire:
 # _build_series_meta
 # ---------------------------------------------------------------------------
 
-_RECS_DF = pd.DataFrame({
-    "unique_id": [
-        "Albany_conventional",
-        "Albany_organic",
-        "Denver_conventional",
-    ],
-    "is_organic": [0, 1, 0],
-})
+_RECS_DF = pd.DataFrame(
+    {
+        "unique_id": [
+            "Albany_conventional",
+            "Albany_organic",
+            "Denver_conventional",
+        ],
+        "is_organic": [0, 1, 0],
+    }
+)
 
 
 class TestBuildSeriesMeta:
@@ -101,10 +105,12 @@ class TestBuildSeriesMeta:
 
     def test_multi_word_region_name(self):
         """rsplit('_', 1) must split on the LAST underscore only."""
-        df = pd.DataFrame({
-            "unique_id": ["LosAngeles_conventional", "SanFrancisco_organic"],
-            "is_organic": [0, 1],
-        })
+        df = pd.DataFrame(
+            {
+                "unique_id": ["LosAngeles_conventional", "SanFrancisco_organic"],
+                "is_organic": [0, 1],
+            }
+        )
         meta = _build_series_meta(df)
         assert meta["LosAngeles_conventional"]["region"] == "LosAngeles"
         assert meta["SanFrancisco_organic"]["region"] == "SanFrancisco"
@@ -115,10 +121,12 @@ class TestBuildSeriesMeta:
 
     def test_is_organic_as_integer_string_coercion(self):
         """is_organic values are coerced via int() so float 1.0 counts as organic."""
-        df = pd.DataFrame({
-            "unique_id": ["Albany_organic"],
-            "is_organic": [1.0],
-        })
+        df = pd.DataFrame(
+            {
+                "unique_id": ["Albany_organic"],
+                "is_organic": [1.0],
+            }
+        )
         meta = _build_series_meta(df)
         assert meta["Albany_organic"]["avocado_type"] == "organic"
 
@@ -126,6 +134,7 @@ class TestBuildSeriesMeta:
 # ---------------------------------------------------------------------------
 # DataStore field contract
 # ---------------------------------------------------------------------------
+
 
 class TestDataStoreContract:
     def test_has_expected_field_names(self):

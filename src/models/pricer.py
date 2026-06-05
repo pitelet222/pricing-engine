@@ -250,9 +250,7 @@ def train_demand_model(  # pragma: no cover
 
     params = {**LGB_PARAMS, "random_state": seed}
     lgb_tr = lgb.Dataset(X_train, label=y_train, feature_name=list(X_train.columns))
-    lgb_va = lgb.Dataset(
-        X_val, label=y_val, feature_name=list(X_val.columns), reference=lgb_tr
-    )
+    lgb_va = lgb.Dataset(X_val, label=y_val, feature_name=list(X_val.columns), reference=lgb_tr)
     return lgb.train(
         params,
         lgb_tr,

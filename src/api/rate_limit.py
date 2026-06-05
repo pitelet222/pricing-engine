@@ -9,6 +9,7 @@ Redis-backed equivalent.
 Returns 429 Too Many Requests with a Retry-After header when the limit is
 exceeded.
 """
+
 from __future__ import annotations
 
 import collections
@@ -19,9 +20,7 @@ from fastapi import HTTPException, Request
 from src.config import settings
 
 # {client_ip: deque of request timestamps (monotonic seconds)}
-_windows: dict[str, collections.deque] = collections.defaultdict(
-    lambda: collections.deque()
-)
+_windows: dict[str, collections.deque] = collections.defaultdict(lambda: collections.deque())
 
 _WINDOW_SECS = 60
 

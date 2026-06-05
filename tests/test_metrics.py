@@ -13,6 +13,7 @@ from src.evaluation.metrics import compute_metrics
 # Perfect forecast
 # ---------------------------------------------------------------------------
 
+
 def test_mae_zero_for_perfect_forecast():
     y = np.array([1.0, 2.0, 3.0])
     result = compute_metrics(y, y)
@@ -41,6 +42,7 @@ def test_smape_zero_for_perfect_forecast():
 # Known values
 # ---------------------------------------------------------------------------
 
+
 def test_mae_known_values():
     y_true = np.array([3.0, 5.0])
     y_pred = np.array([2.0, 6.0])
@@ -67,6 +69,7 @@ def test_mape_returns_percentage_not_fraction():
 # ---------------------------------------------------------------------------
 # Invariants
 # ---------------------------------------------------------------------------
+
 
 def test_rmse_ge_mae():
     rng = np.random.default_rng(0)
@@ -102,6 +105,7 @@ def test_mae_is_symmetric():
 # ---------------------------------------------------------------------------
 # Return type
 # ---------------------------------------------------------------------------
+
 
 def test_all_metrics_are_floats():
     result = compute_metrics([1.0, 2.0], [1.5, 2.5])

@@ -10,6 +10,7 @@ Coverage:
   - strategy_range_chart: four-category bar, y-values, axis label
   - drivers_plain_chart: horizontal orientation, color-by-direction, label lookup
 """
+
 from __future__ import annotations
 
 import datetime
@@ -35,27 +36,33 @@ _RED = "#E53935"
 # Shared builders
 # ---------------------------------------------------------------------------
 
+
 def _forecast_df(n: int = 3) -> pd.DataFrame:
     """Minimal forecast DataFrame with required columns for clean_forecast_chart."""
     base = datetime.date(2018, 1, 7)
-    return pd.DataFrame({
-        "ds": [base + datetime.timedelta(days=7 * i) for i in range(n)],
-        "Ensemble_weighted": [1.40 + i * 0.02 for i in range(n)],
-    })
+    return pd.DataFrame(
+        {
+            "ds": [base + datetime.timedelta(days=7 * i) for i in range(n)],
+            "Ensemble_weighted": [1.40 + i * 0.02 for i in range(n)],
+        }
+    )
 
 
 def _drivers_df() -> pd.DataFrame:
     """Three-row SHAP driver DataFrame for drivers_plain_chart."""
-    return pd.DataFrame({
-        "feature": ["AveragePrice", "region_encoded", "lag_1"],
-        "abs_shap_value": [0.35, 0.20, 0.10],
-        "direction": ["decreases_demand", "increases_demand", "decreases_demand"],
-    })
+    return pd.DataFrame(
+        {
+            "feature": ["AveragePrice", "region_encoded", "lag_1"],
+            "abs_shap_value": [0.35, 0.20, 0.10],
+            "direction": ["decreases_demand", "increases_demand", "decreases_demand"],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # clean_forecast_chart
 # ---------------------------------------------------------------------------
+
 
 class TestCleanForecastChart:
     def test_returns_figure(self):
@@ -112,6 +119,7 @@ class TestCleanForecastChart:
 # revenue_comparison_chart
 # ---------------------------------------------------------------------------
 
+
 class TestRevenueComparisonChart:
     def test_returns_figure(self):
         assert isinstance(revenue_comparison_chart(100_000, 120_000, 1.50, 1.70), go.Figure)
@@ -158,6 +166,7 @@ class TestRevenueComparisonChart:
 # strategy_range_chart
 # ---------------------------------------------------------------------------
 
+
 class TestStrategyRangeChart:
     def test_returns_figure(self):
         assert isinstance(strategy_range_chart(90_000, 120_000, 150_000, 110_000), go.Figure)
@@ -192,6 +201,7 @@ class TestStrategyRangeChart:
 # drivers_plain_chart
 # ---------------------------------------------------------------------------
 
+
 class TestDriversPlainChart:
     def test_returns_figure(self):
         assert isinstance(drivers_plain_chart(_drivers_df(), {}), go.Figure)
@@ -208,20 +218,24 @@ class TestDriversPlainChart:
         assert fig.data[0].orientation == "h"
 
     def test_decreases_demand_colored_red(self):
-        df = pd.DataFrame({
-            "feature": ["AveragePrice"],
-            "abs_shap_value": [0.35],
-            "direction": ["decreases_demand"],
-        })
+        df = pd.DataFrame(
+            {
+                "feature": ["AveragePrice"],
+                "abs_shap_value": [0.35],
+                "direction": ["decreases_demand"],
+            }
+        )
         fig = drivers_plain_chart(df, {})
         assert fig.data[0].marker.color[0] == _RED
 
     def test_increases_demand_colored_green(self):
-        df = pd.DataFrame({
-            "feature": ["region_encoded"],
-            "abs_shap_value": [0.20],
-            "direction": ["increases_demand"],
-        })
+        df = pd.DataFrame(
+            {
+                "feature": ["region_encoded"],
+                "abs_shap_value": [0.20],
+                "direction": ["increases_demand"],
+            }
+        )
         fig = drivers_plain_chart(df, {})
         assert fig.data[0].marker.color[0] == _GREEN
 
@@ -231,20 +245,24 @@ class TestDriversPlainChart:
         assert colors == [_RED, _GREEN, _RED]
 
     def test_feature_label_lookup_applied(self):
-        df = pd.DataFrame({
-            "feature": ["AveragePrice"],
-            "abs_shap_value": [0.35],
-            "direction": ["decreases_demand"],
-        })
+        df = pd.DataFrame(
+            {
+                "feature": ["AveragePrice"],
+                "abs_shap_value": [0.35],
+                "direction": ["decreases_demand"],
+            }
+        )
         fig = drivers_plain_chart(df, {"AveragePrice": "Selling price"})
         assert list(fig.data[0].y) == ["Selling price"]
 
     def test_unknown_feature_falls_back_to_title_case(self):
-        df = pd.DataFrame({
-            "feature": ["some_unknown_feature"],
-            "abs_shap_value": [0.10],
-            "direction": ["increases_demand"],
-        })
+        df = pd.DataFrame(
+            {
+                "feature": ["some_unknown_feature"],
+                "abs_shap_value": [0.10],
+                "direction": ["increases_demand"],
+            }
+        )
         fig = drivers_plain_chart(df, {})
         assert list(fig.data[0].y) == ["Some Unknown Feature"]
 
@@ -255,11 +273,13 @@ class TestDriversPlainChart:
 
     def test_partial_label_dict_falls_back_for_missing(self):
         """Labels dict covers some features; unknown ones should fall back."""
-        df = pd.DataFrame({
-            "feature": ["AveragePrice", "some_feature"],
-            "abs_shap_value": [0.35, 0.10],
-            "direction": ["decreases_demand", "increases_demand"],
-        })
+        df = pd.DataFrame(
+            {
+                "feature": ["AveragePrice", "some_feature"],
+                "abs_shap_value": [0.35, 0.10],
+                "direction": ["decreases_demand", "increases_demand"],
+            }
+        )
         fig = drivers_plain_chart(df, {"AveragePrice": "Selling price"})
         labels = list(fig.data[0].y)
         assert labels[0] == "Selling price"

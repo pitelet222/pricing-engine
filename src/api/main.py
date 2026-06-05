@@ -8,6 +8,7 @@ The DataStore is loaded once at startup via FastAPI's lifespan context manager
 and stored in app.state. Routes retrieve it via get_datastore() in routes/_deps.py,
 which uses the Request object — this avoids a circular import between main and routes.
 """
+
 from __future__ import annotations
 
 import json as _json
@@ -37,6 +38,7 @@ from src.data.manifest import check_manifest
 #                    Activate with PRICING_LOG_FORMAT=json.
 # ---------------------------------------------------------------------------
 
+
 def _configure_logging() -> None:
     if settings.log_format == "json":
         formatter: logging.Formatter = JsonFormatter()
@@ -60,6 +62,7 @@ _log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Lifespan — load all artefacts once, release on shutdown
 # ---------------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:

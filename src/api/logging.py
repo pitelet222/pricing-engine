@@ -8,6 +8,7 @@ Structured fields attached by AccessLogMiddleware (request_id, method,
 path, status, duration_ms) are promoted to top-level JSON keys so log
 queries can filter by them directly without string parsing.
 """
+
 from __future__ import annotations
 
 import json

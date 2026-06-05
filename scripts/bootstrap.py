@@ -22,6 +22,7 @@ Targets:
     notebooks        Execute notebooks 01–06 in order
     clean            Remove Python caches and coverage reports
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,21 +46,29 @@ def _run(*args: str) -> None:
 # Target implementations
 # ---------------------------------------------------------------------------
 
+
 def _setup() -> None:
     _run(_PY, "-m", "pip", "install", "-r", "requirements-dev.txt")
 
 
 def _setup_full() -> None:
     _run(
-        _PY, "-m", "pip", "install",
-        "-r", "requirements.txt",
-        "-r", "requirements-dev.txt",
+        _PY,
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+        "-r",
+        "requirements-dev.txt",
     )
 
 
 def _test() -> None:
     _run(
-        _PY, "-m", "pytest",
+        _PY,
+        "-m",
+        "pytest",
         "tests/test_schemas.py",
         "tests/test_config.py",
         "tests/test_rate_limit.py",
@@ -73,7 +82,8 @@ def _test() -> None:
         "tests/test_charts.py",
         "tests/test_loader_unit.py",
         "tests/test_manifest.py",
-        "-m", "not integration",
+        "-m",
+        "not integration",
         "-v",
     )
 
@@ -112,8 +122,15 @@ def _notebooks() -> None:
         "notebooks/06_explainability.ipynb",
     ):
         _run(
-            _PY, "-m", "jupyter", "nbconvert",
-            "--to", "notebook", "--execute", "--inplace", nb,
+            _PY,
+            "-m",
+            "jupyter",
+            "nbconvert",
+            "--to",
+            "notebook",
+            "--execute",
+            "--inplace",
+            nb,
         )
 
 
@@ -136,17 +153,17 @@ def _clean() -> None:
 # ---------------------------------------------------------------------------
 
 _TARGETS: dict[str, tuple[object, str]] = {
-    "setup":            (_setup,            "Install dev dependencies"),
-    "setup-full":       (_setup_full,       "Install all dependencies including ML stack"),
-    "test":             (_test,             "Run CI-safe unit tests"),
+    "setup": (_setup, "Install dev dependencies"),
+    "setup-full": (_setup_full, "Install all dependencies including ML stack"),
+    "test": (_test, "Run CI-safe unit tests"),
     "test-integration": (_test_integration, "Run toy-DataStore integration tests"),
-    "test-all":         (_test_all,         "Run all tests"),
-    "lint":             (_lint,             "Lint with ruff"),
-    "lint-types":       (_lint_types,       "Type-check src/ with mypy"),
-    "api":              (_api,              "Start FastAPI server (http://localhost:8000)"),
-    "dashboard":        (_dashboard,        "Start Streamlit dashboard (http://localhost:8501)"),
-    "notebooks":        (_notebooks,        "Execute notebooks 01–06 (30–60 min)"),
-    "clean":            (_clean,            "Remove Python caches and coverage reports"),
+    "test-all": (_test_all, "Run all tests"),
+    "lint": (_lint, "Lint with ruff"),
+    "lint-types": (_lint_types, "Type-check src/ with mypy"),
+    "api": (_api, "Start FastAPI server (http://localhost:8000)"),
+    "dashboard": (_dashboard, "Start Streamlit dashboard (http://localhost:8501)"),
+    "notebooks": (_notebooks, "Execute notebooks 01–06 (30–60 min)"),
+    "clean": (_clean, "Remove Python caches and coverage reports"),
 }
 
 
@@ -154,10 +171,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Cross-platform build helper — mirrors the project Makefile.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Targets:\n" + "\n".join(
-            f"  {name:<20}{desc}"
-            for name, (_, desc) in _TARGETS.items()
-        ),
+        epilog="Targets:\n"
+        + "\n".join(f"  {name:<20}{desc}" for name, (_, desc) in _TARGETS.items()),
     )
     parser.add_argument(
         "target",

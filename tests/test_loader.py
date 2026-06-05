@@ -4,6 +4,7 @@ expected shape and content — independently of the API layer.
 
 Requires model artifacts (data/outputs/). Skipped automatically in CI.
 """
+
 import pytest
 
 from src.data.loader import DataStore, load_datastore
@@ -36,14 +37,27 @@ class TestForecastDf:
         assert ds.forecast_df.shape == (1032, 12)
 
     def test_required_columns(self, ds):
-        for col in ("unique_id", "ds", "Ensemble_weighted",
-                    "MSTL_ETS", "MSTL_ARIMA", "MSTL_Theta",
-                    "NHITS", "SeasonalNaive"):
+        for col in (
+            "unique_id",
+            "ds",
+            "Ensemble_weighted",
+            "MSTL_ETS",
+            "MSTL_ARIMA",
+            "MSTL_Theta",
+            "NHITS",
+            "SeasonalNaive",
+        ):
             assert col in ds.forecast_df.columns, f"missing column: {col}"
 
     def test_no_nulls_in_ensemble(self, ds):
-        for col in ("Ensemble_weighted", "MSTL_ETS", "MSTL_ARIMA",
-                    "MSTL_Theta", "NHITS", "SeasonalNaive"):
+        for col in (
+            "Ensemble_weighted",
+            "MSTL_ETS",
+            "MSTL_ARIMA",
+            "MSTL_Theta",
+            "NHITS",
+            "SeasonalNaive",
+        ):
             assert ds.forecast_df[col].isna().sum() == 0, f"{col} has nulls"
 
 
@@ -103,9 +117,7 @@ class TestModelBundle:
         assert len(ds.model_bundle["features"]) == 26
 
     def test_model_can_predict(self, ds):
-        row = ds.latest_ctx_df[
-            ds.latest_ctx_df["unique_id"] == "Albany_conventional"
-        ].iloc[0]
+        row = ds.latest_ctx_df[ds.latest_ctx_df["unique_id"] == "Albany_conventional"].iloc[0]
         X = row[ds.model_bundle["features"]].to_frame().T.astype(float)
         pred = ds.model_bundle["model"].predict(X)
         assert len(pred) == 1

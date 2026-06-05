@@ -21,6 +21,7 @@ from src.models.uncertainty import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_cv_df(n_per_series: int = 20, n_series: int = 3) -> pd.DataFrame:
     """Minimal CV DataFrame with unique_id, y, and a forecast column."""
     rng = np.random.default_rng(0)
@@ -37,25 +38,28 @@ def _make_cv_df(n_per_series: int = 20, n_series: int = 3) -> pd.DataFrame:
 def _make_strategy_df(n: int = 5) -> pd.DataFrame:
     """Minimal strategy DataFrame for compute_risk_metrics."""
     rng = np.random.default_rng(1)
-    return pd.DataFrame({
-        "unique_id": [f"S{i}" for i in range(n)],
-        "current_price": rng.uniform(1.0, 2.5, n),
-        "rev_p10_current": rng.uniform(100, 200, n),
-        "rev_p50_current": rng.uniform(200, 300, n),
-        "rev_p90_current": rng.uniform(300, 400, n),
-        "rev_spread_pct": rng.uniform(5, 30, n),
-        "opt_price_conservative": rng.uniform(1.0, 2.5, n),
-        "opt_price_balanced": rng.uniform(1.0, 2.5, n),
-        "opt_price_aggressive": rng.uniform(1.0, 2.5, n),
-        "rev_uplift_conservative": rng.uniform(-5, 10, n),
-        "rev_uplift_balanced": rng.uniform(-3, 15, n),
-        "rev_uplift_aggressive": rng.uniform(0, 20, n),
-    })
+    return pd.DataFrame(
+        {
+            "unique_id": [f"S{i}" for i in range(n)],
+            "current_price": rng.uniform(1.0, 2.5, n),
+            "rev_p10_current": rng.uniform(100, 200, n),
+            "rev_p50_current": rng.uniform(200, 300, n),
+            "rev_p90_current": rng.uniform(300, 400, n),
+            "rev_spread_pct": rng.uniform(5, 30, n),
+            "opt_price_conservative": rng.uniform(1.0, 2.5, n),
+            "opt_price_balanced": rng.uniform(1.0, 2.5, n),
+            "opt_price_aggressive": rng.uniform(1.0, 2.5, n),
+            "rev_uplift_conservative": rng.uniform(-5, 10, n),
+            "rev_uplift_balanced": rng.uniform(-3, 15, n),
+            "rev_uplift_aggressive": rng.uniform(0, 20, n),
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
 # compute_conformal_pi
 # ---------------------------------------------------------------------------
+
 
 def test_compute_conformal_pi_returns_one_row_per_series():
     cv = _make_cv_df(n_series=4)
@@ -112,6 +116,7 @@ def test_compute_conformal_pi_custom_alpha():
 # compute_risk_metrics
 # ---------------------------------------------------------------------------
 
+
 def test_compute_risk_metrics_adds_new_columns():
     df = _make_strategy_df()
     result = compute_risk_metrics(df)
@@ -141,61 +146,67 @@ def test_compute_risk_metrics_downside_risk_nonnegative():
 
 
 def test_compute_risk_metrics_strategies_agree_when_same_direction():
-    df = pd.DataFrame({
-        "unique_id": ["S0"],
-        "current_price": [1.50],
-        "rev_p10_current": [100.0],
-        "rev_p50_current": [200.0],
-        "rev_p90_current": [300.0],
-        "rev_spread_pct": [10.0],
-        "opt_price_conservative": [2.00],   # both above current → agree
-        "opt_price_balanced": [2.10],
-        "opt_price_aggressive": [2.20],
-        "rev_uplift_conservative": [5.0],
-        "rev_uplift_balanced": [8.0],
-        "rev_uplift_aggressive": [12.0],
-    })
+    df = pd.DataFrame(
+        {
+            "unique_id": ["S0"],
+            "current_price": [1.50],
+            "rev_p10_current": [100.0],
+            "rev_p50_current": [200.0],
+            "rev_p90_current": [300.0],
+            "rev_spread_pct": [10.0],
+            "opt_price_conservative": [2.00],  # both above current → agree
+            "opt_price_balanced": [2.10],
+            "opt_price_aggressive": [2.20],
+            "rev_uplift_conservative": [5.0],
+            "rev_uplift_balanced": [8.0],
+            "rev_uplift_aggressive": [12.0],
+        }
+    )
     result = compute_risk_metrics(df)
     assert result["strategies_agree"].iloc[0]
 
 
 def test_compute_risk_metrics_strategies_disagree_when_opposite():
-    df = pd.DataFrame({
-        "unique_id": ["S0"],
-        "current_price": [1.50],
-        "rev_p10_current": [100.0],
-        "rev_p50_current": [200.0],
-        "rev_p90_current": [300.0],
-        "rev_spread_pct": [10.0],
-        "opt_price_conservative": [1.20],   # conservative → cut
-        "opt_price_balanced": [1.60],
-        "opt_price_aggressive": [1.80],     # aggressive → raise
-        "rev_uplift_conservative": [3.0],
-        "rev_uplift_balanced": [6.0],
-        "rev_uplift_aggressive": [10.0],
-    })
+    df = pd.DataFrame(
+        {
+            "unique_id": ["S0"],
+            "current_price": [1.50],
+            "rev_p10_current": [100.0],
+            "rev_p50_current": [200.0],
+            "rev_p90_current": [300.0],
+            "rev_spread_pct": [10.0],
+            "opt_price_conservative": [1.20],  # conservative → cut
+            "opt_price_balanced": [1.60],
+            "opt_price_aggressive": [1.80],  # aggressive → raise
+            "rev_uplift_conservative": [3.0],
+            "rev_uplift_balanced": [6.0],
+            "rev_uplift_aggressive": [10.0],
+        }
+    )
     result = compute_risk_metrics(df)
     assert not result["strategies_agree"].iloc[0]
 
 
 def test_compute_risk_metrics_price_direction_sign():
-    df = pd.DataFrame({
-        "unique_id": ["S0", "S1"],
-        "current_price": [1.50, 2.00],
-        "rev_p10_current": [100.0, 150.0],
-        "rev_p50_current": [200.0, 250.0],
-        "rev_p90_current": [300.0, 350.0],
-        "rev_spread_pct": [10.0, 8.0],
-        "opt_price_conservative": [2.00, 1.50],  # +, -
-        "opt_price_balanced": [2.10, 1.60],
-        "opt_price_aggressive": [2.20, 1.40],
-        "rev_uplift_conservative": [5.0, 3.0],
-        "rev_uplift_balanced": [8.0, 5.0],
-        "rev_uplift_aggressive": [12.0, 7.0],
-    })
+    df = pd.DataFrame(
+        {
+            "unique_id": ["S0", "S1"],
+            "current_price": [1.50, 2.00],
+            "rev_p10_current": [100.0, 150.0],
+            "rev_p50_current": [200.0, 250.0],
+            "rev_p90_current": [300.0, 350.0],
+            "rev_spread_pct": [10.0, 8.0],
+            "opt_price_conservative": [2.00, 1.50],  # +, -
+            "opt_price_balanced": [2.10, 1.60],
+            "opt_price_aggressive": [2.20, 1.40],
+            "rev_uplift_conservative": [5.0, 3.0],
+            "rev_uplift_balanced": [8.0, 5.0],
+            "rev_uplift_aggressive": [12.0, 7.0],
+        }
+    )
     result = compute_risk_metrics(df)
-    assert result["price_direction_conservative"].iloc[0] > 0   # raise
-    assert result["price_direction_conservative"].iloc[1] < 0   # cut
+    assert result["price_direction_conservative"].iloc[0] > 0  # raise
+    assert result["price_direction_conservative"].iloc[1] < 0  # cut
 
 
 def test_compute_risk_metrics_uplift_sharpe_finite():
@@ -208,6 +219,7 @@ def test_compute_risk_metrics_uplift_sharpe_finite():
 # ---------------------------------------------------------------------------
 # Mock quantile model for revenue_scenarios / optimize_strategies
 # ---------------------------------------------------------------------------
+
 
 class _ConstantQuantileModel:
     """Returns a fixed log-volume regardless of input features."""
@@ -241,6 +253,7 @@ def _make_context_row(price: float = 1.5) -> pd.Series:
 # ---------------------------------------------------------------------------
 # revenue_scenarios
 # ---------------------------------------------------------------------------
+
 
 def test_revenue_scenarios_returns_all_quantiles():
     qmodels = _make_quantile_models()
@@ -282,16 +295,25 @@ def test_revenue_scenarios_nonnegative():
 # optimize_strategies
 # ---------------------------------------------------------------------------
 
+
 def test_optimize_strategies_returns_required_keys():
     qmodels = _make_quantile_models()
     row = _make_context_row(price=1.5)
-    result = optimize_strategies(row, p_mean=1.5, quantile_models=qmodels, feature_cols=FEATURE_COLS)
+    result = optimize_strategies(
+        row, p_mean=1.5, quantile_models=qmodels, feature_cols=FEATURE_COLS
+    )
     required = {
         "current_price",
-        "rev_p10_current", "rev_p50_current", "rev_p90_current",
+        "rev_p10_current",
+        "rev_p50_current",
+        "rev_p90_current",
         "rev_spread_pct",
-        "opt_price_conservative", "opt_price_balanced", "opt_price_aggressive",
-        "rev_uplift_conservative", "rev_uplift_balanced", "rev_uplift_aggressive",
+        "opt_price_conservative",
+        "opt_price_balanced",
+        "opt_price_aggressive",
+        "rev_uplift_conservative",
+        "rev_uplift_balanced",
+        "rev_uplift_aggressive",
     }
     assert required.issubset(result.keys())
 
@@ -300,7 +322,9 @@ def test_optimize_strategies_current_price_matches_row():
     price = 1.75
     qmodels = _make_quantile_models()
     row = _make_context_row(price=price)
-    result = optimize_strategies(row, p_mean=price, quantile_models=qmodels, feature_cols=FEATURE_COLS)
+    result = optimize_strategies(
+        row, p_mean=price, quantile_models=qmodels, feature_cols=FEATURE_COLS
+    )
     assert result["current_price"] == round(price, 4)
 
 
@@ -310,8 +334,11 @@ def test_optimize_strategies_optimal_prices_within_bounds():
     qmodels = _make_quantile_models()
     row = _make_context_row(price=p_mean)
     result = optimize_strategies(
-        row, p_mean=p_mean, quantile_models=qmodels,
-        feature_cols=FEATURE_COLS, margin=margin,
+        row,
+        p_mean=p_mean,
+        quantile_models=qmodels,
+        feature_cols=FEATURE_COLS,
+        margin=margin,
     )
     p_min = max(0.50, p_mean * (1 - margin))
     p_max = p_mean * (1 + margin)
@@ -323,5 +350,7 @@ def test_optimize_strategies_optimal_prices_within_bounds():
 def test_optimize_strategies_rev_spread_pct_nonneg():
     qmodels = _make_quantile_models()
     row = _make_context_row()
-    result = optimize_strategies(row, p_mean=1.5, quantile_models=qmodels, feature_cols=FEATURE_COLS)
+    result = optimize_strategies(
+        row, p_mean=1.5, quantile_models=qmodels, feature_cols=FEATURE_COLS
+    )
     assert result["rev_spread_pct"] >= 0

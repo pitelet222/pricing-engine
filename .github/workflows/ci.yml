@@ -44,21 +44,7 @@ jobs:
             tests/test_forecaster.py tests/test_pricer.py tests/test_uncertainty.py \
             tests/test_explainability.py tests/test_charts.py tests/test_loader_unit.py \
             tests/test_manifest.py \
-            --cov=src/api/schemas \
-            --cov=src/config \
-            --cov=src/api/auth \
-            --cov=src/api/metrics \
-            --cov=src/api/logging \
-            --cov=src/api/rate_limit \
-            --cov=src/data/preprocessing \
-            --cov=src/data/features \
-            --cov=src/evaluation/metrics \
-            --cov=src/models/forecaster \
-            --cov=src/models/pricer \
-            --cov=src/models/uncertainty \
-            --cov=src/evaluation/explainability \
-            --cov=src/dashboard/charts \
-            --cov=src/data/manifest \
+            --cov=src \
             --cov-report=term-missing \
             --cov-report=xml \
             --cov-fail-under=90 \

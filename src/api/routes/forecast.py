@@ -1,4 +1,5 @@
 """GET /v1/forecast/{unique_id} — 12-week price forecast for one series."""
+
 from __future__ import annotations
 
 from typing import cast

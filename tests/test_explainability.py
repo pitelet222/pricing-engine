@@ -15,6 +15,7 @@ from src.evaluation.explainability import build_top_drivers, generate_pricing_na
 # Mock SHAP explanation
 # ---------------------------------------------------------------------------
 
+
 class _MockExplanation:
     """Minimal shap.Explanation stand-in used by build_top_drivers."""
 
@@ -51,13 +52,15 @@ def _make_shap_explanation(n_series: int = 4) -> _MockExplanation:
 def _make_recs_df(n_series: int = 4, uplift_pct: float = 5.0) -> pd.DataFrame:
     rows = []
     for i in range(n_series):
-        rows.append({
-            "unique_id": f"Series_{i}",
-            "current_price": 1.50,
-            "optimal_price": 1.50 * (1 + uplift_pct / 100),
-            "revenue_change_pct": uplift_pct,
-            "price_change_pct": uplift_pct,
-        })
+        rows.append(
+            {
+                "unique_id": f"Series_{i}",
+                "current_price": 1.50,
+                "optimal_price": 1.50 * (1 + uplift_pct / 100),
+                "revenue_change_pct": uplift_pct,
+                "price_change_pct": uplift_pct,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -65,13 +68,19 @@ def _make_recs_df(n_series: int = 4, uplift_pct: float = 5.0) -> pd.DataFrame:
 # build_top_drivers
 # ---------------------------------------------------------------------------
 
+
 def test_build_top_drivers_output_columns():
     ctx = _make_latest_ctx()
     shap_ex = _make_shap_explanation()
     result = build_top_drivers(shap_ex, ctx, FEATURE_COLS, n=3)
     expected = {
-        "unique_id", "driver_rank", "feature",
-        "shap_value", "abs_shap_value", "direction", "feature_value",
+        "unique_id",
+        "driver_rank",
+        "feature",
+        "shap_value",
+        "abs_shap_value",
+        "direction",
+        "feature_value",
     }
     assert expected.issubset(set(result.columns))
 
@@ -140,16 +149,21 @@ def test_build_top_drivers_feature_in_feature_cols():
 # generate_pricing_narrative
 # ---------------------------------------------------------------------------
 
+
 def test_generate_pricing_narrative_contains_uid():
     uid = "Albany_organic"
     shap_row = np.array([0.1, -0.3, 0.5, -0.2, 0.05])
-    recs = pd.DataFrame([{
-        "unique_id": uid,
-        "current_price": 1.50,
-        "optimal_price": 1.80,
-        "revenue_change_pct": 5.0,
-        "price_change_pct": 20.0,
-    }])
+    recs = pd.DataFrame(
+        [
+            {
+                "unique_id": uid,
+                "current_price": 1.50,
+                "optimal_price": 1.80,
+                "revenue_change_pct": 5.0,
+                "price_change_pct": 20.0,
+            }
+        ]
+    )
     narrative = generate_pricing_narrative(uid, shap_row, FEATURE_COLS, 10.85, recs)
     assert uid in narrative
 
@@ -157,13 +171,17 @@ def test_generate_pricing_narrative_contains_uid():
 def test_generate_pricing_narrative_raise_action():
     uid = "Albany_organic"
     shap_row = np.array([0.1, 0.2, 0.3, 0.4, 0.5])
-    recs = pd.DataFrame([{
-        "unique_id": uid,
-        "current_price": 1.50,
-        "optimal_price": 1.80,  # raise
-        "revenue_change_pct": 8.0,
-        "price_change_pct": 20.0,
-    }])
+    recs = pd.DataFrame(
+        [
+            {
+                "unique_id": uid,
+                "current_price": 1.50,
+                "optimal_price": 1.80,  # raise
+                "revenue_change_pct": 8.0,
+                "price_change_pct": 20.0,
+            }
+        ]
+    )
     narrative = generate_pricing_narrative(uid, shap_row, FEATURE_COLS, 10.85, recs)
     assert "raise" in narrative.lower()
     assert "cut" not in narrative.lower()
@@ -172,13 +190,17 @@ def test_generate_pricing_narrative_raise_action():
 def test_generate_pricing_narrative_cut_action():
     uid = "Albany_organic"
     shap_row = np.array([0.1, 0.2, 0.3, 0.4, 0.5])
-    recs = pd.DataFrame([{
-        "unique_id": uid,
-        "current_price": 1.50,
-        "optimal_price": 1.20,  # cut
-        "revenue_change_pct": 3.0,
-        "price_change_pct": -20.0,
-    }])
+    recs = pd.DataFrame(
+        [
+            {
+                "unique_id": uid,
+                "current_price": 1.50,
+                "optimal_price": 1.20,  # cut
+                "revenue_change_pct": 3.0,
+                "price_change_pct": -20.0,
+            }
+        ]
+    )
     narrative = generate_pricing_narrative(uid, shap_row, FEATURE_COLS, 10.85, recs)
     assert "cut" in narrative.lower()
     assert "raise" not in narrative.lower()
@@ -187,13 +209,17 @@ def test_generate_pricing_narrative_cut_action():
 def test_generate_pricing_narrative_returns_string():
     uid = "Albany_organic"
     shap_row = np.zeros(N_FEATURES)
-    recs = pd.DataFrame([{
-        "unique_id": uid,
-        "current_price": 1.50,
-        "optimal_price": 1.60,
-        "revenue_change_pct": 2.0,
-        "price_change_pct": 6.7,
-    }])
+    recs = pd.DataFrame(
+        [
+            {
+                "unique_id": uid,
+                "current_price": 1.50,
+                "optimal_price": 1.60,
+                "revenue_change_pct": 2.0,
+                "price_change_pct": 6.7,
+            }
+        ]
+    )
     result = generate_pricing_narrative(uid, shap_row, FEATURE_COLS, 10.85, recs)
     assert isinstance(result, str)
 
@@ -201,13 +227,17 @@ def test_generate_pricing_narrative_returns_string():
 def test_generate_pricing_narrative_contains_top_features():
     uid = "TestSeries"
     shap_row = np.array([1.5, -0.8, 0.3, 0.1, 0.05])  # AveragePrice top driver
-    recs = pd.DataFrame([{
-        "unique_id": uid,
-        "current_price": 1.50,
-        "optimal_price": 1.70,
-        "revenue_change_pct": 4.0,
-        "price_change_pct": 13.3,
-    }])
+    recs = pd.DataFrame(
+        [
+            {
+                "unique_id": uid,
+                "current_price": 1.50,
+                "optimal_price": 1.70,
+                "revenue_change_pct": 4.0,
+                "price_change_pct": 13.3,
+            }
+        ]
+    )
     narrative = generate_pricing_narrative(uid, shap_row, FEATURE_COLS, 10.85, recs, top_n=2)
     # Top 2 drivers by |SHAP|: AveragePrice (1.5) and is_organic (-0.8)
     assert "AveragePrice" in narrative
@@ -217,12 +247,16 @@ def test_generate_pricing_narrative_contains_top_features():
 def test_generate_pricing_narrative_uplift_included():
     uid = "TestSeries"
     shap_row = np.array([0.2, 0.3, 0.1, 0.4, 0.05])
-    recs = pd.DataFrame([{
-        "unique_id": uid,
-        "current_price": 1.50,
-        "optimal_price": 1.65,
-        "revenue_change_pct": 12.5,
-        "price_change_pct": 10.0,
-    }])
+    recs = pd.DataFrame(
+        [
+            {
+                "unique_id": uid,
+                "current_price": 1.50,
+                "optimal_price": 1.65,
+                "revenue_change_pct": 12.5,
+                "price_change_pct": 10.0,
+            }
+        ]
+    )
     narrative = generate_pricing_narrative(uid, shap_row, FEATURE_COLS, 10.85, recs)
     assert "12.5" in narrative

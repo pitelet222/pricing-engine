@@ -10,6 +10,7 @@ overridden at deploy-time via an environment variable prefixed with PRICING_:
 Docker Compose passes these through the ``environment:`` block.
 A .env file in the project root is also picked up automatically.
 """
+
 from __future__ import annotations
 
 import pathlib

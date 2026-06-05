@@ -167,9 +167,9 @@ def add_holiday_flag(df: pd.DataFrame) -> pd.DataFrame:
     is_holiday_week : int (1 = holiday week, 0 = non-holiday week).
     """
     df = df.copy()
-    df["is_holiday_week"] = (
-        df.apply(lambda r: (int(r["year"]), int(r["week"])) in _HOLIDAY_WEEKS, axis=1).astype(int)
-    )
+    df["is_holiday_week"] = df.apply(
+        lambda r: (int(r["year"]), int(r["week"])) in _HOLIDAY_WEEKS, axis=1
+    ).astype(int)
     return df
 
 

@@ -23,6 +23,7 @@ Generated artifacts
     data/outputs/shap_top_drivers.csv        (notebook 06)
     data/outputs/region_label_encoder.pkl    (notebook 04)
 """
+
 from __future__ import annotations
 
 import pathlib
@@ -54,11 +55,14 @@ def _run(notebook_rel: str) -> None:
 
     result = subprocess.run(
         [
-            sys.executable, "-m", "nbconvert",
-            "--to", "notebook",
+            sys.executable,
+            "-m",
+            "nbconvert",
+            "--to",
+            "notebook",
             "--execute",
             "--inplace",
-            "--ExecutePreprocessor.timeout=900",   # 15-min cap per notebook
+            "--ExecutePreprocessor.timeout=900",  # 15-min cap per notebook
             "--ExecutePreprocessor.kernel_name=python3",
             str(nb_path),
         ],

@@ -13,6 +13,7 @@ Notes
 Importing src.api.main triggers logging setup but NOT the lifespan, so no
 DataStore loading occurs. app.openapi() introspects route definitions only.
 """
+
 from __future__ import annotations
 
 import json
