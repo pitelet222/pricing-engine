@@ -226,9 +226,9 @@ def test_region_volume_level_is_log_transformed():
 def test_build_features_output_has_42_columns():
     df = _make_clean_df(n_weeks=20, regions=["Albany", "Houston"])
     result = build_features(df)
-    assert (
-        len(result.columns) == 42
-    ), f"Expected 42 columns, got {len(result.columns)}: {sorted(result.columns)}"
+    assert len(result.columns) == 42, (
+        f"Expected 42 columns, got {len(result.columns)}: {sorted(result.columns)}"
+    )
 
 
 def test_build_features_no_nans_in_feature_cols():

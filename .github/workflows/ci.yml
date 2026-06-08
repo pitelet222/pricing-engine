@@ -136,7 +136,7 @@ jobs:
           enable-cache: true
 
       - name: Install ruff
-        run: uv pip install --system "ruff>=0.4"
+        run: uv pip install --system "ruff==0.15.14"
 
       - name: Run ruff lint
         run: ruff check src/ tests/ scripts/
