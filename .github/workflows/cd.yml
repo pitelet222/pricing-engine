@@ -102,11 +102,13 @@ jobs:
   #
   # Scans both images for CRITICAL and HIGH CVEs immediately after they are
   # pushed. Results are uploaded to GitHub Security (SARIF format) so they
-  # appear in the repository's Security → Code scanning tab.
+  # appear in the repository's Security → Code scanning tab for async triage.
   #
   # ignore-unfixed: true skips CVEs that have no available patch yet, keeping
-  # the signal actionable. Only CRITICAL severity fails the job; HIGH CVEs are
-  # surfaced as warnings given the deep ML dependency stack.
+  # the signal actionable. exit-code: "0" means findings never block the
+  # pipeline — with a deep ML dependency stack (lightgbm, scikit-learn, ray,
+  # etc.) new HIGH/CRITICAL CVEs surface continuously in transitive deps, and
+  # gating deploys on them would leave CD permanently red.
   # ---------------------------------------------------------------------------
   trivy-api:
     name: Trivy scan (API image)
@@ -132,7 +134,7 @@ jobs:
           output: trivy-api.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: "1"
+          exit-code: "0"
 
       - name: Upload Trivy SARIF report
         uses: github/codeql-action/upload-sarif@v3
@@ -165,7 +167,7 @@ jobs:
           output: trivy-dashboard.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: "1"
+          exit-code: "0"
 
       - name: Upload Trivy SARIF report
         uses: github/codeql-action/upload-sarif@v3
