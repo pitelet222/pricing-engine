@@ -3,6 +3,7 @@
 
 # Editor settings
 .vscode/
+.claude/
 
 # Notebook training artifacts
 notebooks/lightning_logs/
