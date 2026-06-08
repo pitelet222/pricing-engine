@@ -91,26 +91,26 @@ make dashboard        # or: streamlit run src/dashboard/app.py
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        DATA PIPELINE                         │
-│                                                              │
-│  avocado.csv → [01 EDA] → [02 Features] → [03 Forecast]    │
-│                                    ↓              ↓          │
-│                             [04 Pricing] → [05 Uncertainty]  │
-│                                    ↓                          │
-│                            [06 Explainability]               │
-│                                    ↓                          │
+│                        DATA PIPELINE                        │
+│                                                             │
+│  avocado.csv → [01 EDA] → [02 Features] → [03 Forecast]     │
+│                                    ↓              ↓         │
+│                             [04 Pricing] → [05 Uncertainty] │
+│                                    ↓                        │
+│                            [06 Explainability]              │
+│                                    ↓                        |
 │                          data/outputs/  ←─── artefacts ──── │
 └───────────────────────────────┬─────────────────────────────┘
                                 │
               ┌─────────────────┼─────────────────┐
               │                 │                  │
-    ┌─────────▼───────┐ ┌──────▼──────┐  ┌───────▼───────┐
+    ┌─────────▼───────-┐ ┌──────▼──────┐  ┌───────▼───────┐
     │   FastAPI        │ │  Streamlit  │  │  Jupyter      │
     │  src/api/        │ │  Dashboard  │  │  Notebooks    │
     │                  │ │ src/dash../ │  │               │
     │ /v1/series       │ │             │  │  Analysis &   │
     │ /v1/forecast/{id}│ │  Forecast   │  │  Research     │
-    │ /v1/recommend/{id}│ │  Pricing   │  │               │
+    │ /v1/recommend/{id}││  Pricing    │  │               │
     │ /v1/explain/{id} │ │  Explain    │  └───────────────┘
     │ /v1/simulate     │ │  Simulate   │
     └──────────────────┘ └─────────────┘
@@ -120,16 +120,16 @@ make dashboard        # or: streamlit run src/dashboard/app.py
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Statistical (MSTL decomposition)                        │
+│  Statistical (MSTL decomposition)                       │
 │    MSTL + AutoARIMA  ──┐                                │
 │    MSTL + AutoETS    ──┤──► Ensemble_weighted           │
 │    MSTL + AutoTheta  ──┤    (inverse-MAE weights)       │
-│                         │                                │
-│  Neural                 │                                │
+│                        │                               │
+│  Neural                │                               │
 │    NHITS             ──┤                                │
 │    NBEATSx           ──┤                                │
 │    DLinear           ──┘                                │
-│                                                          │
+│                                                         │
 │  Baseline                                               │
 │    SeasonalNaive  (benchmark)                           │
 └─────────────────────────────────────────────────────────┘
