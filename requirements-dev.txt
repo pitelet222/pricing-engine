@@ -5,6 +5,7 @@
 pytest>=8.0
 httpx>=0.27          # TestClient transport for FastAPI integration tests
 pytest-cov>=5.0      # Coverage measurement and reporting
+fakeredis>=2.20      # In-memory Redis for testing the distributed rate limiter
 
 # ---------- Linting ----------
 ruff==0.15.14        # Fast Python linter (replaces flake8, isort, pyupgrade) — pinned to match .pre-commit-config.yaml and CI

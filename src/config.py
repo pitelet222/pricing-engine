@@ -99,5 +99,11 @@ class Settings(BaseSettings):
     # Maximum POST /simulate requests per IP per 60-second window.
     simulate_rate_limit: int = 30
 
+    # Redis URL for distributed rate-limit state, e.g. redis://localhost:6379/0.
+    # Empty string (default) disables Redis: each worker falls back to an
+    # in-process sliding window — correct for local dev and single-instance
+    # deployments, but workers won't share state across processes/replicas.
+    redis_url: str = ""
+
 
 settings = Settings()

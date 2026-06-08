@@ -10,12 +10,16 @@ anyio==4.13.0
     #   starlette
 ast-serialize==0.5.0
     # via mypy
+async-timeout==5.0.1
+    # via redis
 certifi==2026.5.20
     # via
     #   httpcore
     #   httpx
 coverage==7.14.1
     # via pytest-cov
+fakeredis==2.36.1
+    # via -r requirements-ci.txt
 fastapi==0.136.3
     # via -r requirements-ci.txt
 h11==0.16.0
@@ -82,10 +86,16 @@ python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.2.2
     # via pydantic-settings
+redis==8.0.0
+    # via
+    #   -r requirements-ci.txt
+    #   fakeredis
 scipy==1.17.1
     # via -r requirements-ci.txt
 six==1.17.0
     # via python-dateutil
+sortedcontainers==2.4.0
+    # via fakeredis
 starlette==1.2.1
     # via
     #   -r requirements-ci.txt

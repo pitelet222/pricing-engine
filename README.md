@@ -181,7 +181,7 @@ pricing-engine/
 │   │   │   └── simulate.py       # POST /v1/simulate
 │   │   ├── schemas.py            # Pydantic request/response models
 │   │   ├── auth.py               # X-API-Key authentication (optional)
-│   │   └── rate_limit.py         # In-process sliding-window rate limiter
+│   │   └── rate_limit.py         # Sliding-window rate limiter (in-process or Redis-backed)
 │   ├── dashboard/                # Streamlit frontend
 │   │   ├── app.py                # Page layout + tabs
 │   │   └── charts.py             # Reusable Plotly figure builders
@@ -291,7 +291,11 @@ committing to a recommendation.
 
 > **Rate limit:** 30 requests / 60 s per IP address (configurable via
 > `PRICING_SIMULATE_RATE_LIMIT`). Exceeding the limit returns HTTP 429 with a
-> `Retry-After` header.
+> `Retry-After` header. By default each worker tracks its own window
+> in-process; set `PRICING_REDIS_URL` (e.g. `redis://redis:6379/0`) to share
+> the limit across multiple workers/replicas. If Redis becomes unreachable,
+> the limiter logs a warning and falls back to in-process limiting rather
+> than blocking traffic.
 
 ```bash
 curl -X POST http://localhost:8000/v1/simulate \

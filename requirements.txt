@@ -43,6 +43,7 @@ uvicorn[standard]>=0.27
 pydantic>=2.5
 pydantic-settings>=2.2
 prometheus-client>=0.20
+redis>=5.0                   # Optional distributed rate-limit backend (PRICING_REDIS_URL)
 
 # ---------- Dashboard ----------
 streamlit>=1.31
